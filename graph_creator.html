@@ -190,10 +190,51 @@
                     <input type="number" id="nodeHeight" value="60" min="30" max="200" oninput="updateNodePreview()">
                 </div>
                 <div class="form-group">
-                    <label>Node Color:</label>
+                    <label>Fill Color:</label>
                     <div class="color-picker">
                         <input type="color" id="nodeColor" value="#1a237e" oninput="updateNodePreview(); syncColorHex('nodeColor', 'nodeColorHex')">
                         <input type="text" id="nodeColorHex" value="#1a237e" oninput="syncColorInput('nodeColorHex', 'nodeColor'); updateNodePreview()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Border Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="nodeBorderColor" value="#000000" oninput="updateNodePreview(); syncColorHex('nodeBorderColor', 'nodeBorderColorHex')">
+                        <input type="text" id="nodeBorderColorHex" value="#000000" oninput="syncColorInput('nodeBorderColorHex', 'nodeBorderColor'); updateNodePreview()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="nodeBorderType">Border Type:</label>
+                    <select id="nodeBorderType" onchange="updateNodePreview()">
+                        <option value="solid">Solid</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="dotted">Dotted</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="nodeBorderWidth">Border Width:</label>
+                    <input type="number" id="nodeBorderWidth" value="1" min="0" max="10" oninput="updateNodePreview()">
+                </div>
+                <div class="form-group">
+                    <label for="nodeFontType">Font Type:</label>
+                    <select id="nodeFontType" onchange="updateNodePreview()">
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                        <option value="'Courier New', monospace">Courier New</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="Verdana, sans-serif">Verdana</option>
+                        <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="nodeFontSize">Font Size:</label>
+                    <input type="number" id="nodeFontSize" value="14" min="8" max="32" oninput="updateNodePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Font Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="nodeFontColor" value="#FFFFFF" oninput="updateNodePreview(); syncColorHex('nodeFontColor', 'nodeFontColorHex')">
+                        <input type="text" id="nodeFontColorHex" value="#FFFFFF" oninput="syncColorInput('nodeFontColorHex', 'nodeFontColor'); updateNodePreview()">
                     </div>
                 </div>
                 <div class="form-group">
@@ -224,10 +265,51 @@
                     <input type="number" id="editNodeHeight" value="60" min="30" max="200" disabled>
                 </div>
                 <div class="form-group">
-                    <label>Node Color:</label>
+                    <label>Fill Color:</label>
                     <div class="color-picker">
                         <input type="color" id="editNodeColor" value="#1a237e" disabled>
                         <input type="text" id="editNodeColorHex" value="#1a237e" disabled>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Border Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="editNodeBorderColor" value="#000000" disabled>
+                        <input type="text" id="editNodeBorderColorHex" value="#000000" disabled>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editNodeBorderType">Border Type:</label>
+                    <select id="editNodeBorderType" disabled>
+                        <option value="solid">Solid</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="dotted">Dotted</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editNodeBorderWidth">Border Width:</label>
+                    <input type="number" id="editNodeBorderWidth" value="1" min="0" max="10" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="editNodeFontType">Font Type:</label>
+                    <select id="editNodeFontType" disabled>
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                        <option value="'Courier New', monospace">Courier New</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="Verdana, sans-serif">Verdana</option>
+                        <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editNodeFontSize">Font Size:</label>
+                    <input type="number" id="editNodeFontSize" value="14" min="8" max="32" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Font Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="editNodeFontColor" value="#FFFFFF" disabled>
+                        <input type="text" id="editNodeFontColorHex" value="#FFFFFF" disabled>
                     </div>
                 </div>
                 <div class="node-buttons">
@@ -284,6 +366,10 @@
                     <input type="text" id="linkLabel" placeholder="Enter link label (optional)">
                 </div>
                 <div class="form-group">
+                    <label for="linkTooltip">Link Tooltip:</label>
+                    <input type="text" id="linkTooltip" placeholder="Enter link tooltip (optional)">
+                </div>
+                <div class="form-group">
                     <label>Link Color:</label>
                     <div class="color-picker">
                         <input type="color" id="linkColor" value="#1a237e">
@@ -291,6 +377,15 @@
                     </div>
                 </div>
                 <button id="createLinkBtn" onclick="createLink()">Create Link</button>
+            </div>
+
+            <div class="section">
+                <h3>Import from Excel</h3>
+                <div class="form-group">
+                    <label for="excelFile">Select Excel File:</label>
+                    <input type="file" id="excelFile" accept=".xlsx">
+                </div>
+                <button onclick="importFromExcel()">Import from Excel</button>
             </div>
 
             <div class="section">
@@ -408,13 +503,29 @@
             // Monitor changes to graph that might require resizing
             graph.on('add change:position change:size', _.debounce(autoResizeGraph, 300));
 
-            // Initialize node color hex synchronization
+            // Initialize color hex synchronization
             document.getElementById('nodeColor').addEventListener('input', function() {
                 syncColorHex('nodeColor', 'nodeColorHex');
             });
 
             document.getElementById('nodeColorHex').addEventListener('input', function() {
                 syncColorInput('nodeColorHex', 'nodeColor');
+            });
+
+            document.getElementById('nodeBorderColor').addEventListener('input', function() {
+                syncColorHex('nodeBorderColor', 'nodeBorderColorHex');
+            });
+
+            document.getElementById('nodeBorderColorHex').addEventListener('input', function() {
+                syncColorInput('nodeBorderColorHex', 'nodeBorderColor');
+            });
+
+            document.getElementById('nodeFontColor').addEventListener('input', function() {
+                syncColorHex('nodeFontColor', 'nodeFontColorHex');
+            });
+
+            document.getElementById('nodeFontColorHex').addEventListener('input', function() {
+                syncColorInput('nodeFontColorHex', 'nodeFontColor');
             });
 
             document.getElementById('linkColor').addEventListener('input', function() {
@@ -434,6 +545,9 @@
             paper.on('blank:pointerclick', function() {
                 deselectNode();
             });
+            
+            // Handle link tooltips
+            setupLinkTooltips();
 
             // Initialize preview
             initNodePreview();
@@ -444,6 +558,52 @@
             // Initialize saved views
             loadSavedViews();
         });
+        
+        // Set up link tooltips
+        function setupLinkTooltips() {
+            // Create a tooltip element if it doesn't exist
+            let tooltip = document.getElementById('linkTooltipDisplay');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'linkTooltipDisplay';
+                tooltip.style.position = 'absolute';
+                tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                tooltip.style.color = 'white';
+                tooltip.style.padding = '5px 10px';
+                tooltip.style.borderRadius = '4px';
+                tooltip.style.fontSize = '12px';
+                tooltip.style.zIndex = '1000';
+                tooltip.style.pointerEvents = 'none';
+                tooltip.style.display = 'none';
+                document.body.appendChild(tooltip);
+            }
+            
+            // Show tooltip on link mouseover
+            paper.on('link:mouseover', function(linkView) {
+                const link = linkView.model;
+                const tooltipText = link.prop('tooltip');
+                
+                if (tooltipText) {
+                    tooltip.textContent = tooltipText;
+                    tooltip.style.display = 'block';
+                    
+                    // Position tooltip near the mouse
+                    document.addEventListener('mousemove', positionTooltip);
+                }
+            });
+            
+            // Hide tooltip on link mouseout
+            paper.on('link:mouseout', function() {
+                tooltip.style.display = 'none';
+                document.removeEventListener('mousemove', positionTooltip);
+            });
+            
+            // Function to position the tooltip near the mouse
+            function positionTooltip(e) {
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY + 10) + 'px';
+            }
+        }
 
         // Initialize node preview
         function initNodePreview() {
@@ -469,7 +629,13 @@
             const label = document.getElementById('nodeLabel').value || 'Node Label';
             const width = parseInt(document.getElementById('nodeWidth').value) || 150;
             const height = parseInt(document.getElementById('nodeHeight').value) || 60;
-            const color = document.getElementById('nodeColor').value || '#1a237e';
+            const fillColor = document.getElementById('nodeColor').value || '#1a237e';
+            const borderColor = document.getElementById('nodeBorderColor').value || '#000000';
+            const borderType = document.getElementById('nodeBorderType').value || 'solid';
+            const borderWidth = parseInt(document.getElementById('nodeBorderWidth').value) || 1;
+            const fontType = document.getElementById('nodeFontType').value || 'Arial, sans-serif';
+            const fontSize = parseInt(document.getElementById('nodeFontSize').value) || 14;
+            const fontColor = document.getElementById('nodeFontColor').value || '#FFFFFF';
 
             // Clear the preview graph
             nodePreviewGraph.clear();
@@ -480,15 +646,18 @@
                 size: { width: width > 250 ? 250 : width, height: height > 80 ? 80 : height },
                 attrs: {
                     body: {
-                        fill: color,
-                        stroke: color,
+                        fill: fillColor,
+                        stroke: borderColor,
+                        strokeWidth: borderWidth,
+                        strokeDasharray: borderType === 'dashed' ? '5,5' : (borderType === 'dotted' ? '2,2' : null),
                         rx: 4,
                         ry: 4
                     },
                     label: {
                         text: label,
-                        fill: 'white',
-                        fontSize: 12,
+                        fill: fontColor,
+                        fontSize: fontSize,
+                        fontFamily: fontType,
                         fontWeight: 'bold'
                     }
                 }
@@ -528,7 +697,13 @@
             const tooltip = document.getElementById('nodeTooltip').value;
             const width = parseInt(document.getElementById('nodeWidth').value);
             const height = parseInt(document.getElementById('nodeHeight').value);
-            const color = document.getElementById('nodeColor').value;
+            const fillColor = document.getElementById('nodeColor').value;
+            const borderColor = document.getElementById('nodeBorderColor').value;
+            const borderType = document.getElementById('nodeBorderType').value;
+            const borderWidth = parseInt(document.getElementById('nodeBorderWidth').value);
+            const fontType = document.getElementById('nodeFontType').value;
+            const fontSize = parseInt(document.getElementById('nodeFontSize').value);
+            const fontColor = document.getElementById('nodeFontColor').value;
 
             // Create a new node
             const node = new joint.shapes.standard.Rectangle({
@@ -536,22 +711,27 @@
                 size: { width, height },
                 attrs: {
                     body: {
-                        fill: color,
-                        stroke: color,
+                        fill: fillColor,
+                        stroke: borderColor,
+                        strokeWidth: borderWidth,
+                        strokeDasharray: borderType === 'dashed' ? '5,5' : (borderType === 'dotted' ? '2,2' : null),
                         rx: 4,
                         ry: 4
                     },
                     label: {
                         text: label,
-                        fill: 'white',
-                        fontSize: 14,
+                        fill: fontColor,
+                        fontSize: fontSize,
+                        fontFamily: fontType,
                         fontWeight: 'bold'
                     }
                 }
             });
 
-            // Add tooltip as a custom property
+            // Add tooltip and style properties as custom properties
             node.prop('tooltip', tooltip);
+            node.prop('borderType', borderType);
+            node.prop('fontType', fontType);
 
             // Add the node to the graph
             graph.addCell(node);
@@ -591,6 +771,23 @@
             document.getElementById('editNodeHeight').value = node.get('size').height;
             document.getElementById('editNodeColor').value = node.attr('body/fill');
             document.getElementById('editNodeColorHex').value = node.attr('body/fill');
+            
+            // Update new styling fields
+            document.getElementById('editNodeBorderColor').value = node.attr('body/stroke') || '#000000';
+            document.getElementById('editNodeBorderColorHex').value = node.attr('body/stroke') || '#000000';
+            
+            // Set border type based on strokeDasharray
+            let borderType = 'solid';
+            const strokeDasharray = node.attr('body/strokeDasharray');
+            if (strokeDasharray === '5,5') borderType = 'dashed';
+            else if (strokeDasharray === '2,2') borderType = 'dotted';
+            document.getElementById('editNodeBorderType').value = node.prop('borderType') || borderType;
+            
+            document.getElementById('editNodeBorderWidth').value = node.attr('body/strokeWidth') || 1;
+            document.getElementById('editNodeFontType').value = node.prop('fontType') || 'Arial, sans-serif';
+            document.getElementById('editNodeFontSize').value = node.attr('label/fontSize') || 14;
+            document.getElementById('editNodeFontColor').value = node.attr('label/fill') || '#FFFFFF';
+            document.getElementById('editNodeFontColorHex').value = node.attr('label/fill') || '#FFFFFF';
 
             // Enable edit form
             document.getElementById('editNodeLabel').disabled = false;
@@ -599,6 +796,14 @@
             document.getElementById('editNodeHeight').disabled = false;
             document.getElementById('editNodeColor').disabled = false;
             document.getElementById('editNodeColorHex').disabled = false;
+            document.getElementById('editNodeBorderColor').disabled = false;
+            document.getElementById('editNodeBorderColorHex').disabled = false;
+            document.getElementById('editNodeBorderType').disabled = false;
+            document.getElementById('editNodeBorderWidth').disabled = false;
+            document.getElementById('editNodeFontType').disabled = false;
+            document.getElementById('editNodeFontSize').disabled = false;
+            document.getElementById('editNodeFontColor').disabled = false;
+            document.getElementById('editNodeFontColorHex').disabled = false;
             document.getElementById('updateNodeBtn').disabled = false;
             document.getElementById('deleteNodeBtn').disabled = false;
 
@@ -609,6 +814,22 @@
 
             document.getElementById('editNodeColorHex').addEventListener('input', function() {
                 syncColorInput('editNodeColorHex', 'editNodeColor');
+            });
+            
+            document.getElementById('editNodeBorderColor').addEventListener('input', function() {
+                syncColorHex('editNodeBorderColor', 'editNodeBorderColorHex');
+            });
+
+            document.getElementById('editNodeBorderColorHex').addEventListener('input', function() {
+                syncColorInput('editNodeBorderColorHex', 'editNodeBorderColor');
+            });
+            
+            document.getElementById('editNodeFontColor').addEventListener('input', function() {
+                syncColorHex('editNodeFontColor', 'editNodeFontColorHex');
+            });
+
+            document.getElementById('editNodeFontColorHex').addEventListener('input', function() {
+                syncColorInput('editNodeFontColorHex', 'editNodeFontColor');
             });
         }
 
@@ -626,6 +847,14 @@
                 document.getElementById('editNodeHeight').value = 60;
                 document.getElementById('editNodeColor').value = '#1a237e';
                 document.getElementById('editNodeColorHex').value = '#1a237e';
+                document.getElementById('editNodeBorderColor').value = '#000000';
+                document.getElementById('editNodeBorderColorHex').value = '#000000';
+                document.getElementById('editNodeBorderType').value = 'solid';
+                document.getElementById('editNodeBorderWidth').value = '1';
+                document.getElementById('editNodeFontType').value = 'Arial, sans-serif';
+                document.getElementById('editNodeFontSize').value = '14';
+                document.getElementById('editNodeFontColor').value = '#FFFFFF';
+                document.getElementById('editNodeFontColorHex').value = '#FFFFFF';
 
                 document.getElementById('editNodeLabel').disabled = true;
                 document.getElementById('editNodeTooltip').disabled = true;
@@ -633,6 +862,14 @@
                 document.getElementById('editNodeHeight').disabled = true;
                 document.getElementById('editNodeColor').disabled = true;
                 document.getElementById('editNodeColorHex').disabled = true;
+                document.getElementById('editNodeBorderColor').disabled = true;
+                document.getElementById('editNodeBorderColorHex').disabled = true;
+                document.getElementById('editNodeBorderType').disabled = true;
+                document.getElementById('editNodeBorderWidth').disabled = true;
+                document.getElementById('editNodeFontType').disabled = true;
+                document.getElementById('editNodeFontSize').disabled = true;
+                document.getElementById('editNodeFontColor').disabled = true;
+                document.getElementById('editNodeFontColorHex').disabled = true;
                 document.getElementById('updateNodeBtn').disabled = true;
                 document.getElementById('deleteNodeBtn').disabled = true;
             }
@@ -654,14 +891,37 @@
             const tooltip = document.getElementById('editNodeTooltip').value;
             const width = parseInt(document.getElementById('editNodeWidth').value);
             const height = parseInt(document.getElementById('editNodeHeight').value);
-            const color = document.getElementById('editNodeColor').value;
+            const fillColor = document.getElementById('editNodeColor').value;
+            const borderColor = document.getElementById('editNodeBorderColor').value;
+            const borderType = document.getElementById('editNodeBorderType').value;
+            const borderWidth = parseInt(document.getElementById('editNodeBorderWidth').value);
+            const fontType = document.getElementById('editNodeFontType').value;
+            const fontSize = parseInt(document.getElementById('editNodeFontSize').value);
+            const fontColor = document.getElementById('editNodeFontColor').value;
 
             // Update the node
             selectedNode.attr('label/text', label);
             selectedNode.prop('tooltip', tooltip);
             selectedNode.resize(width, height);
-            selectedNode.attr('body/fill', color);
-            selectedNode.attr('body/stroke', color);
+            
+            // Update styling properties
+            selectedNode.attr({
+                body: {
+                    fill: fillColor,
+                    stroke: borderColor,
+                    strokeWidth: borderWidth,
+                    strokeDasharray: borderType === 'dashed' ? '5,5' : (borderType === 'dotted' ? '2,2' : null)
+                },
+                label: {
+                    fill: fontColor,
+                    fontSize: fontSize,
+                    fontFamily: fontType
+                }
+            });
+            
+            // Store custom properties
+            selectedNode.prop('borderType', borderType);
+            selectedNode.prop('fontType', fontType);
 
             // Reset selection highlight
             selectedNode.attr('body/stroke', '#FF5722');
@@ -707,6 +967,7 @@
             const sourceId = document.getElementById('sourceNode').value;
             const targetId = document.getElementById('targetNode').value;
             const linkLabel = document.getElementById('linkLabel').value;
+            const linkTooltip = document.getElementById('linkTooltip').value;
             const linkColor = document.getElementById('linkColor').value;
 
             if (!sourceId || !targetId) {
@@ -768,6 +1029,14 @@
                 ] : []
             });
 
+            // Store label and tooltip as properties
+            if (linkLabel) {
+                link.prop('linkLabel', linkLabel);
+            }
+            
+            // Add tooltip to the link
+            link.prop('tooltip', linkTooltip || '');
+
             // Add the link to the graph
             graph.addCell(link);
             
@@ -776,6 +1045,10 @@
 
             // Show success message
             showStatusMessage('Link created successfully');
+            
+            // Clear fields
+            document.getElementById('linkLabel').value = '';
+            document.getElementById('linkTooltip').value = '';
         }
 
         // Update node dropdowns
@@ -822,34 +1095,65 @@
 
             // Create nodes sheet data
             const nodesData = [
-                ['ID', 'Label', 'Tooltip', 'Width', 'Height', 'Color', 'X', 'Y']
+                ['ID', 'Label', 'Tooltip', 'Width', 'Height', 'Fill Color', 'Border Color', 'Border Width', 'Border Type', 'Font Type', 'Font Size', 'Font Color', 'X', 'Y', 'Type', 'Label Style']
             ];
 
             elements.forEach(element => {
+                // Determine border type from strokeDasharray
+                let borderType = 'solid';
+                const strokeDasharray = element.attr('body/strokeDasharray');
+                if (strokeDasharray === '5,5') borderType = 'dashed';
+                else if (strokeDasharray === '2,2') borderType = 'dotted';
+                
+                // Get element type
+                let elementType = 'Node';
+                if (element.prop('type') === 'label') {
+                    elementType = 'Label';
+                }
+                // CustomGroup class doesn't exist, so just check if it has a group property instead
+                else if (element.prop('isGroup') === true) {
+                    elementType = 'Group';
+                }
+                
                 nodesData.push([
                     element.id,
-                    element.attr('label/text'),
+                    element.attr('label/text') || element.attr('text/text') || '',
                     element.prop('tooltip') || '',
                     element.get('size').width,
                     element.get('size').height,
                     element.attr('body/fill'),
+                    element.attr('body/stroke'),
+                    element.attr('body/strokeWidth') || 1,
+                    element.prop('borderType') || borderType,
+                    element.prop('fontType') || element.attr('label/fontFamily') || 'Arial, sans-serif',
+                    element.attr('label/fontSize') || 14,
+                    element.attr('label/fill') || '#FFFFFF',
                     element.get('position').x,
-                    element.get('position').y
+                    element.get('position').y,
+                    elementType,
+                    element.prop('labelStyle') || '' // Add labelStyle for text labels
                 ]);
             });
 
             // Create links sheet data
             const linksData = [
-                ['Source ID', 'Target ID', 'Color', 'Label']
+                ['Source ID', 'Target ID', 'Color', 'Label', 'Tooltip']
             ];
 
             links.forEach(link => {
-                const labels = link.labels || [];
+                // Extract label text properly
                 let labelText = '';
-
-                // Add null check before accessing attrs property
-                if (labels.length > 0 && labels[0] && labels[0].attrs && labels[0].attrs.text) {
-                    labelText = labels[0].attrs.text.text || '';
+                
+                // Check for linkLabel property first
+                if (link.prop('linkLabel')) {
+                    labelText = link.prop('linkLabel');
+                }
+                // Then check labels array
+                else if (link.labels && link.labels.length > 0) {
+                    const label = link.labels[0];
+                    if (label && label.attrs && label.attrs.text) {
+                        labelText = label.attrs.text.text || '';
+                    }
                 }
 
                 // Get the source and target IDs safely
@@ -862,7 +1166,8 @@
                         sourceObj.id,
                         targetObj.id,
                         link.attr('line/stroke'),
-                        labelText
+                        labelText,
+                        link.prop('tooltip') || ''
                     ]);
                 }
             });
@@ -962,8 +1267,9 @@
             // Capture nodes and their properties
             const nodes = {};
             graph.getElements().forEach(element => {
-                // Check if this is a regular node or a label
+                // Check if this is a regular node, group, or a label
                 const type = element.prop('type') || 'node';
+                const isGroup = element.prop('isGroup') || false;
 
                 if (type === 'label') {
                     // It's a text label
@@ -978,6 +1284,17 @@
                         },
                         labelStyle: element.prop('labelStyle') || 'rectangle'
                     };
+                } else if (isGroup) {
+                    // It's a group
+                    nodes[element.id] = {
+                        type: 'group',
+                        position: element.position(),
+                        size: element.size(),
+                        attrs: {
+                            label: element.attr('label/text') || 'Group',
+                            fill: element.attr('body/stroke') || '#000'
+                        }
+                    };
                 } else {
                     // It's a regular node
                     nodes[element.id] = {
@@ -986,9 +1303,17 @@
                         size: element.size(),
                         attrs: {
                             label: element.attr('label/text') || '',
-                            fill: element.attr('body/fill') || '#1a237e'
+                            fill: element.attr('body/fill') || '#1a237e',
+                            stroke: element.attr('body/stroke') || '#000000',
+                            strokeWidth: element.attr('body/strokeWidth') || 1,
+                            strokeDasharray: element.attr('body/strokeDasharray'),
+                            fontFamily: element.attr('label/fontFamily') || 'Arial, sans-serif',
+                            fontSize: element.attr('label/fontSize') || 14,
+                            fontColor: element.attr('label/fill') || '#FFFFFF'
                         },
-                        tooltip: element.prop('tooltip') || ''
+                        tooltip: element.prop('tooltip') || '',
+                        borderType: element.prop('borderType') || 'solid',
+                        fontType: element.prop('fontType') || 'Arial, sans-serif'
                     };
                 }
             });
@@ -996,12 +1321,19 @@
             // Capture links
             const links = [];
             graph.getLinks().forEach(link => {
-                const labels = link.labels || [];
+                // Extract label text properly
                 let labelText = '';
-
-                // Add null check before accessing attrs property
-                if (labels.length > 0 && labels[0] && labels[0].attrs && labels[0].attrs.text) {
-                    labelText = labels[0].attrs.text.text || '';
+                
+                // Check for linkLabel property first
+                if (link.prop('linkLabel')) {
+                    labelText = link.prop('linkLabel');
+                }
+                // Then check labels array
+                else if (link.labels && link.labels.length > 0) {
+                    const label = link.labels[0];
+                    if (label && label.attrs && label.attrs.text) {
+                        labelText = label.attrs.text.text || '';
+                    }
                 }
 
                 // Get the source and target IDs safely
@@ -1014,7 +1346,8 @@
                         sourceId: sourceObj.id,
                         targetId: targetObj.id,
                         color: link.attr('line/stroke') || '#1a237e',
-                        label: labelText
+                        label: labelText,
+                        tooltip: link.prop('tooltip') || ''
                     });
                 }
             });
@@ -1261,8 +1594,42 @@
                         
                         element.prop('type', 'label');
                         element.prop('labelStyle', nodeData.labelStyle);
+                    } else if (nodeData.type === 'group') {
+                        // Create a group node
+                        element = new joint.shapes.standard.Rectangle({
+                            id: id,
+                            position: nodeData.position,
+                            size: nodeData.size,
+                            attrs: {
+                                body: {
+                                    fill: 'none',
+                                    stroke: nodeData.attrs.fill || '#000',
+                                    strokeWidth: 3,
+                                    strokeDasharray: '10 5',
+                                    rx: 8,
+                                    ry: 8,
+                                    opacity: 0.8
+                                },
+                                label: {
+                                    text: nodeData.attrs.label || 'Group',
+                                    fill: '#fff',
+                                    fontSize: 24,
+                                    fontWeight: 'bold',
+                                    refX: 0.5,
+                                    refY: -50,
+                                    textAnchor: 'middle',
+                                    textVerticalAnchor: 'middle'
+                                }
+                            }
+                        });
+                        
+                        // Mark as a group
+                        element.prop('isGroup', true);
                     } else {
                         // Recreate a regular node
+                        const borderType = nodeData.borderType || 'solid';
+                        const strokeDasharray = borderType === 'dashed' ? '5,5' : (borderType === 'dotted' ? '2,2' : null);
+                        
                         element = new joint.shapes.standard.Rectangle({
                             id: id,
                             position: nodeData.position,
@@ -1270,20 +1637,25 @@
                             attrs: {
                                 body: {
                                     fill: nodeData.attrs.fill,
-                                    stroke: nodeData.attrs.fill,
+                                    stroke: nodeData.attrs.stroke || nodeData.attrs.fill,
+                                    strokeWidth: nodeData.attrs.strokeWidth || 1,
+                                    strokeDasharray: nodeData.attrs.strokeDasharray || strokeDasharray,
                                     rx: 4,
                                     ry: 4
                                 },
                                 label: {
                                     text: nodeData.attrs.label,
-                                    fill: 'white',
-                                    fontSize: 14,
+                                    fill: nodeData.attrs.fontColor || '#FFFFFF',
+                                    fontSize: nodeData.attrs.fontSize || 14,
+                                    fontFamily: nodeData.attrs.fontFamily || 'Arial, sans-serif',
                                     fontWeight: 'bold'
                                 }
                             }
                         });
                         
                         element.prop('tooltip', nodeData.tooltip);
+                        element.prop('borderType', nodeData.borderType || 'solid');
+                        element.prop('fontType', nodeData.fontType || 'Arial, sans-serif');
                     }
                     
                     graph.addCell(element);
@@ -1462,6 +1834,218 @@
 
             // Clear the form
             document.getElementById('labelText').value = '';
+        }
+        
+        // Function to import graph from Excel file
+        function importFromExcel() {
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatusMessage('Please select an Excel file first', 'error');
+                return;
+            }
+            
+            if (!file.name.endsWith('.xlsx')) {
+                showStatusMessage('Please select a valid Excel file (.xlsx)', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // Process the Excel file
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Get the nodes and links sheets
+                    const nodesSheet = workbook.Sheets['Nodes'];
+                    const linksSheet = workbook.Sheets['Links'];
+                    
+                    if (!nodesSheet || !linksSheet) {
+                        showStatusMessage('Invalid Excel file format. The file must contain "Nodes" and "Links" sheets.', 'error');
+                        return;
+                    }
+                    
+                    // Convert sheets to JSON
+                    const nodesData = XLSX.utils.sheet_to_json(nodesSheet, { header: 1 });
+                    const linksData = XLSX.utils.sheet_to_json(linksSheet, { header: 1 });
+                    
+                    // Remove header rows
+                    nodesData.shift();
+                    linksData.shift();
+                    
+                    // Confirm before replacing existing graph
+                    if (graph.getElements().length > 0) {
+                        if (!confirm('This will replace your current graph. Continue?')) {
+                            return;
+                        }
+                        
+                        // Clear existing graph
+                        graph.clear();
+                    }
+                    
+                    // Store node references
+                    const nodeMap = {};
+                    
+                    // Create nodes
+                    nodesData.forEach(node => {
+                        // Get basic node properties
+                        const nodeId = node[0];
+                        const label = node[1];
+                        const tooltip = node[2];
+                        const width = parseFloat(node[3]) || 150;
+                        const height = parseFloat(node[4]) || 60;
+                        const fillColor = node[5] || '#1a237e';
+                        
+                        // Get advanced styling properties
+                        const borderColor = node[6] || fillColor;
+                        const borderWidth = parseFloat(node[7]) || 1;
+                        const borderType = node[8] || 'solid';
+                        const fontType = node[9] || 'Arial, sans-serif';
+                        const fontSize = parseFloat(node[10]) || 14;
+                        const fontColor = node[11] || '#FFFFFF';
+                        
+                        // Get position (index 12, 13)
+                        const posX = parseFloat(node[12]) || (50 + Math.random() * 400);
+                        const posY = parseFloat(node[13]) || (50 + Math.random() * 300);
+                        
+                        // Create node with all styling properties
+                        const rect = new joint.shapes.standard.Rectangle({
+                            id: nodeId,
+                            position: { x: posX, y: posY },
+                            size: { width, height },
+                            attrs: {
+                                body: {
+                                    fill: fillColor,
+                                    stroke: borderColor,
+                                    strokeWidth: borderWidth,
+                                    strokeDasharray: borderType === 'dashed' ? '5,5' : (borderType === 'dotted' ? '2,2' : null),
+                                    rx: 4,
+                                    ry: 4
+                                },
+                                label: {
+                                    text: label,
+                                    fill: fontColor,
+                                    fontSize: fontSize,
+                                    fontFamily: fontType,
+                                    fontWeight: 'bold'
+                                }
+                            }
+                        });
+                        
+                        // Set custom properties
+                        rect.prop('tooltip', tooltip || '');
+                        rect.prop('borderType', borderType);
+                        rect.prop('fontType', fontType);
+                        
+                        // Add to graph and store reference
+                        graph.addCell(rect);
+                        nodeMap[nodeId] = rect;
+                    });
+                    
+                    // Create links
+                    linksData.forEach(link => {
+                        const sourceId = link[0];
+                        const targetId = link[1];
+                        const linkColor = link[2] || '#1a237e';
+                        const linkLabel = link[3] || '';
+                        
+                        const source = nodeMap[sourceId];
+                        const target = nodeMap[targetId];
+                        
+                        if (!source || !target) {
+                            console.warn(`Could not find source or target for link: ${sourceId} -> ${targetId}`);
+                            return;
+                        }
+                        
+                        // Create the link
+                        const linkObj = new joint.shapes.standard.Link({
+                            source: { id: sourceId },
+                            target: { id: targetId },
+                            attrs: {
+                                line: {
+                                    stroke: linkColor,
+                                    strokeWidth: 2,
+                                    targetMarker: {
+                                        type: 'path',
+                                        d: 'M 10 -5 0 0 10 5 z',
+                                        fill: linkColor
+                                    }
+                                }
+                            },
+                            labels: linkLabel ? [
+                                {
+                                    position: 0.5,
+                                    attrs: {
+                                        text: {
+                                            text: linkLabel,
+                                            fill: '#333',
+                                            fontSize: 12,
+                                            fontWeight: 'bold',
+                                            textAnchor: 'middle',
+                                            textVerticalAnchor: 'middle',
+                                            pointerEvents: 'none'
+                                        },
+                                        rect: {
+                                            fill: 'white',
+                                            stroke: '#ccc',
+                                            strokeWidth: 1,
+                                            rx: 3,
+                                            ry: 3
+                                        }
+                                    }
+                                }
+                            ] : []
+                        });
+                        
+                        graph.addCell(linkObj);
+                    });
+                    
+                    // Update node dropdowns
+                    updateNodeDropdowns();
+                    
+                    // Auto-resize the graph container if needed
+                    autoResizeGraph();
+                    
+                    showStatusMessage('Graph imported successfully from Excel');
+                    
+                    // Reset file input
+                    fileInput.value = '';
+                    
+                } catch (error) {
+                    console.error('Error importing from Excel:', error);
+                    showStatusMessage('Error importing from Excel: ' + error.message, 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                showStatusMessage('Error reading file. Please try again.', 'error');
+            };
+            
+            // Read the file as ArrayBuffer
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Function to redirect to the view page
+        function redirect_to_view() {
+            // Check if there's a graph to view
+            if (graph.getElements().length === 0) {
+                showStatusMessage('Please create a graph first', 'error');
+                return;
+            }
+            
+            // Export the current graph to local storage
+            const graphData = JSON.stringify({
+                nodes: captureCurrentViewState().nodes,
+                links: captureCurrentViewState().links
+            });
+            
+            localStorage.setItem('graphToView', graphData);
+            
+            // Redirect to the index.html page
+            window.location.href = 'index.html';
         }
     </script>
 </body>

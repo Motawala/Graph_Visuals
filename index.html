@@ -318,7 +318,7 @@
             width: 130px;
             font-size: 14px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            height: 60px;
+            height: 70px;
         }
 
 
@@ -970,6 +970,18 @@
                 links.forEach(link => {
                     if (link) {
                         link.attr('line/opacity', 0);
+                        
+                        // Hide all link labels
+                        if (link.labels && link.labels.length > 0) {
+                            link.labels().forEach(label => {
+                                link.label(label.idx, {
+                                    attrs: {
+                                        text: { opacity: 0 },
+                                        rect: { opacity: 0 }
+                                    }
+                                });
+                            });
+                        }
                     }
                 });
             }
@@ -1033,6 +1045,18 @@
                 setTimeout(() => {
                     link.attr('line/opacity', 1); // Set to 1 for full visibility
                     link.attr('line/strokeWidth', 5); // Make lines thicker
+                    
+                    // Show labels on links if they exist
+                    if (link.labels && link.labels.length > 0) {
+                        link.labels().forEach(label => {
+                            link.label(label.idx, {
+                                attrs: {
+                                    text: { opacity: 1 },
+                                    rect: { opacity: 1 }
+                                }
+                            });
+                        });
+                    }
 
                     // Use source node's color
                     const source = link.getSourceCell();
@@ -1048,6 +1072,18 @@
         function hideAllConnections() {
             links.forEach(link => {
                 link.attr('line/opacity', 0);
+                
+                // Hide labels on links if they exist
+                if (link.labels && link.labels.length > 0) {
+                    link.labels().forEach(label => {
+                        link.label(label.idx, {
+                            attrs: {
+                                text: { opacity: 0 },
+                                rect: { opacity: 0 }
+                            }
+                        });
+                    });
+                }
             });
             activeNode = null;
         }
@@ -1065,6 +1101,18 @@
             // Reset to default connection visibility
             links.forEach(link => {
                 link.attr('line/opacity', 0);
+                
+                // Hide all link labels
+                if (link.labels && link.labels.length > 0) {
+                    link.labels().forEach(label => {
+                        link.label(label.idx, {
+                            attrs: {
+                                text: { opacity: 0 },
+                                rect: { opacity: 0 }
+                            }
+                        });
+                    });
+                }
             });
 
             activeNode = null;
@@ -1123,13 +1171,32 @@
                     const nodeMap = {};
 
                     nodesData.forEach(node => {
-                        const [nodeId, label, tooltip, width, height, color, x, y, type] = node;
-
-                        // Handle numeric values properly, ensuring they're converted to numbers
-                        const nodeX = parseFloat(x) || 0;
-                        const nodeY = parseFloat(y) || 0;
-                        const nodeWidth = parseFloat(width) || 250;
-                        const nodeHeight = parseFloat(height) || 55;
+                        // Get basic node properties
+                        const nodeId = node[0];
+                        const label = node[1];
+                        const tooltip = node[2];
+                        const width = parseFloat(node[3]) || 250;
+                        const height = parseFloat(node[4]) || 55;
+                        const fillColor = node[5] || '#4A90E2';
+                        
+                        // Get node position
+                        const nodeX = parseFloat(node[12]) || 0;
+                        const nodeY = parseFloat(node[13]) || 0;
+                        const type = node[14] || 'Node';
+                        const labelStyle = node[15] || ''; // Get label style (for text labels)
+                        
+                        // Check if we have advanced styling properties (from the updated export format)
+                        let borderColor, borderWidth, borderType, fontType, fontSize, fontColor;
+                        
+                        // Border properties (indices 6, 7, 8)
+                        borderColor = node[6] || fillColor; // Default to fill color if no border color
+                        borderWidth = parseFloat(node[7]) || 1;
+                        borderType = node[8] || 'solid';
+                        
+                        // Font properties (indices 9, 10, 11)
+                        fontType = node[9] || 'Arial, sans-serif';
+                        fontSize = parseFloat(node[10]) || 14;
+                        fontColor = node[11] || '#FFFFFF';
 
                         if (type === 'Group') {
                             // Create group with exact dimensions and position from Excel
@@ -1137,29 +1204,181 @@
                                 label,
                                 nodeX,
                                 nodeY,
-                                nodeWidth,
-                                nodeHeight,
-                                color
+                                width,
+                                height,
+                                fillColor
                             );
                             nodeMap[nodeId] = group;
-                        } else {
-                            // Create regular node with exact dimensions and position from Excel
-                            const nodeObj = createNode(
-                                nodeId,
-                                label,
-                                nodeX,
-                                nodeY,
-                                color,
-                                nodeWidth,
-                                nodeHeight
-                            );
+                        } else if (type === 'Label') {
+                            // Create a text label based on the saved style
+                            let labelElement;
+                            const commonAttrs = {
+                                text: {
+                                    text: label, // This is the text content from Excel
+                                    fill: 'white',
+                                    fontSize: fontSize,
+                                    fontWeight: 'bold',
+                                    textAnchor: 'middle',
+                                    textVerticalAnchor: 'middle'
+                                }
+                            };
 
-                            // Store tooltip if available
-                            if (tooltip) {
-                                nodeObj.set('tooltip', tooltip);
+                            switch (labelStyle) {
+                                case 'rectangle':
+                                    labelElement = new joint.shapes.standard.Rectangle({
+                                        id: nodeId,
+                                        position: { x: nodeX, y: nodeY },
+                                        size: { width: width, height: height },
+                                        attrs: {
+                                            body: {
+                                                fill: fillColor,
+                                                stroke: fillColor,
+                                                rx: 4,
+                                                ry: 4
+                                            },
+                                            ...commonAttrs
+                                        }
+                                    });
+                                    break;
+                                case 'circle':
+                                    labelElement = new joint.shapes.standard.Circle({
+                                        id: nodeId,
+                                        position: { x: nodeX, y: nodeY },
+                                        size: { width: width, height: height },
+                                        attrs: {
+                                            body: {
+                                                fill: fillColor,
+                                                stroke: fillColor
+                                            },
+                                            ...commonAttrs
+                                        }
+                                    });
+                                    break;
+                                case 'ellipse':
+                                    labelElement = new joint.shapes.standard.Ellipse({
+                                        id: nodeId,
+                                        position: { x: nodeX, y: nodeY },
+                                        size: { width: width, height: height },
+                                        attrs: {
+                                            body: {
+                                                fill: fillColor,
+                                                stroke: fillColor
+                                            },
+                                            ...commonAttrs
+                                        }
+                                    });
+                                    break;
+                                case 'cloud':
+                                    labelElement = new joint.shapes.standard.Polygon({
+                                        id: nodeId,
+                                        position: { x: nodeX, y: nodeY },
+                                        size: { width: width, height: height },
+                                        attrs: {
+                                            body: {
+                                                fill: fillColor,
+                                                stroke: fillColor,
+                                                refPoints: '10,0 20,0 30,5 40,0 50,5 60,0 70,5 80,10 80,20 75,30 85,40 75,50 65,55 50,60 35,55 25,50 15,45 5,35 0,25 5,15 10,10'
+                                            },
+                                            ...commonAttrs
+                                        }
+                                    });
+                                    break;
+                                default:
+                                    // Default to rectangle if style not specified
+                                    labelElement = new joint.shapes.standard.Rectangle({
+                                        id: nodeId,
+                                        position: { x: nodeX, y: nodeY },
+                                        size: { width: width, height: height },
+                                        attrs: {
+                                            body: {
+                                                fill: fillColor,
+                                                stroke: fillColor,
+                                                rx: 4,
+                                                ry: 4
+                                            },
+                                            ...commonAttrs
+                                        }
+                                    });
                             }
 
-                            nodeMap[nodeId] = nodeObj;
+                            // Set custom type to identify this as a label
+                            labelElement.prop('type', 'label');
+                            labelElement.prop('labelStyle', labelStyle);
+
+                            // Add the label to the graph
+                            graph.addCell(labelElement);
+                            nodeMap[nodeId] = labelElement;
+                        } else {
+                            // Create a node with all styling properties
+                            const nodeObj = new joint.shapes.standard.Rectangle({
+                                id: nodeId,
+                                position: { x: nodeX, y: nodeY },
+                                size: { width: width, height: height },
+                                attrs: {
+                                    body: {
+                                        fill: fillColor,
+                                        stroke: borderColor,
+                                        strokeWidth: borderWidth,
+                                        strokeDasharray: borderType === 'dashed' ? '5,5' : (borderType === 'dotted' ? '2,2' : null),
+                                        rx: 5,
+                                        ry: 5
+                                    },
+                                    label: {
+                                        text: label,
+                                        fill: fontColor,
+                                        fontSize: fontSize,
+                                        fontFamily: fontType,
+                                        fontWeight: 'normal',
+                                        textVerticalAnchor: 'middle',
+                                        textAnchor: 'middle',
+                                        refX: '50%',
+                                        refY: '50%'
+                                    }
+                                },
+                                markup: [{
+                                    tagName: 'rect',
+                                    selector: 'body'
+                                }, {
+                                    tagName: 'text',
+                                    selector: 'label'
+                                }]
+                            }).addTo(graph);
+
+                            // Apply CustomRect shape for proper rendering
+                            const customRect = new CustomRect({
+                                id: nodeObj.id,
+                                position: { x: nodeX, y: nodeY },
+                                size: { width: width, height: height },
+                                attrs: Object.assign({}, nodeObj.attributes.attrs),
+                                markup: [{
+                                    tagName: 'rect',
+                                    selector: 'body'
+                                }, {
+                                    tagName: 'text',
+                                    selector: 'label'
+                                }],
+                                isGroup: false
+                            });
+
+                            // Store custom styling properties
+                            customRect.prop('borderType', borderType);
+                            customRect.prop('fontType', fontType);
+                            
+                            // Store tooltip if available
+                            if (tooltip) {
+                                customRect.prop('tooltip', tooltip);
+                            }
+
+                            // Replace the standard rectangle with our custom one
+                            nodeObj.remove();
+                            customRect.addTo(graph);
+
+                            // Make node immovable
+                            customRect.set('interactive', { vertexAdd: false, vertexRemove: false, vertexMove: false });
+
+                            // Store in nodeMap and global nodes object
+                            nodeMap[nodeId] = customRect;
+                            nodes[nodeId] = customRect;
                         }
                     });
 
@@ -1179,7 +1398,11 @@
 
                     // Create links
                     linksData.forEach(link => {
-                        const [sourceId, targetId, color, linkLabel, tooltip] = link;
+                        const sourceId = link[0];
+                        const targetId = link[1];
+                        const color = link[2] || '#1a237e';
+                        const linkLabel = link[3] || '';
+                        const tooltip = link[4] || '';
 
                         // Get source and target nodes
                         const source = nodeMap[sourceId];
@@ -1192,7 +1415,7 @@
 
                         // Clean up node text
                         const getCleanNodeText = (node) => {
-                            return node.attr('label/text').replace(/\n/g, ' ').trim();
+                            return node.attr('label/text') || node.attr('text/text') || '';
                         };
 
                         // Store the clean connection information
@@ -1202,6 +1425,7 @@
                             color: color
                         };
 
+                        // Create link object
                         const linkObj = new joint.shapes.standard.Link({
                             source: { id: source.id },
                             target: { id: target.id },
@@ -1239,14 +1463,41 @@
                             z: 1
                         });
 
-                        // Store link label if provided
-                        if (linkLabel) {
-                            linkObj.set('linkLabel', linkLabel);
+                        // Debug log
+                        console.log('Importing link with label:', linkLabel);
+
+                        // Add label to link if provided
+                        if (linkLabel && linkLabel.trim() !== '') {
+                            // Store label as property
+                            linkObj.prop('linkLabel', linkLabel);
+                            
+                            // Also add visual label
+                            linkObj.labels([{
+                                position: 0.5,
+                                attrs: {
+                                    text: {
+                                        text: linkLabel,
+                                        fill: '#333',
+                                        fontSize: 12,
+                                        fontWeight: 'bold',
+                                        textAnchor: 'middle',
+                                        textVerticalAnchor: 'middle',
+                                        pointerEvents: 'none'
+                                    },
+                                    rect: {
+                                        fill: 'white',
+                                        stroke: '#ccc',
+                                        strokeWidth: 1,
+                                        rx: 3,
+                                        ry: 3
+                                    }
+                                }
+                            }]);
                         }
 
                         // Store tooltip if provided
                         if (tooltip) {
-                            linkObj.set('tooltip', tooltip);
+                            linkObj.prop('tooltip', tooltip);
                         }
 
                         importedLinks.push(linkObj);
@@ -1271,6 +1522,18 @@
                     // Hide all links by default
                     importedLinks.forEach(link => {
                         link.attr('line/opacity', 0);
+                        
+                        // Initially hide all link labels
+                        if (link.labels && link.labels.length > 0) {
+                            link.labels().forEach(label => {
+                                link.label(label.idx, {
+                                    attrs: {
+                                        text: { opacity: 0 },
+                                        rect: { opacity: 0 }
+                                    }
+                                });
+                            });
+                        }
                     });
 
                     // Auto-resize the graph container if needed
@@ -1406,6 +1669,18 @@
                                 if (sourceMatches || targetMatches) {
                                     link.attr('line/opacity', 1);
                                     link.attr('line/strokeWidth', 4);
+                                    
+                                    // Show the link labels
+                                    if (link.labels && link.labels.length > 0) {
+                                        link.labels().forEach(label => {
+                                            link.label(label.idx, {
+                                                attrs: {
+                                                    text: { opacity: 1 },
+                                                    rect: { opacity: 1 }
+                                                }
+                                            });
+                                        });
+                                    }
 
                                     // Highlight the connected node even if it doesn't match the search
                                     if (sourceMatches && !targetMatches) {
@@ -1512,7 +1787,7 @@
                 const wb = XLSX.utils.book_new();
 
                 // Create headers
-                const nodesHeader = ['ID', 'Label', 'Tooltip', 'Width', 'Height', 'Color', 'X', 'Y', 'Type'];
+                const nodesHeader = ['ID', 'Label', 'Tooltip', 'Width', 'Height', 'Fill Color', 'Border Color', 'Border Width', 'Border Type', 'Font Type', 'Font Size', 'Font Color', 'X', 'Y', 'Type', 'Label Style'];
                 const linksHeader = ['Source ID', 'Target ID', 'Color', 'Label', 'Tooltip'];
 
                 // Get nodes data
@@ -1525,19 +1800,36 @@
                     let type = 'Node';
                     if (element.attributes.type === 'CustomGroup') {
                         type = 'Group';
+                    } else if (element.prop('type') === 'label') {
+                        type = 'Label';
+                    }
+
+                    // Determine border type from strokeDasharray
+                    let borderType = element.prop('borderType') || 'solid';
+                    if (!borderType) {
+                        const strokeDasharray = element.attr('body/strokeDasharray');
+                        if (strokeDasharray === '5,5') borderType = 'dashed';
+                        else if (strokeDasharray === '2,2') borderType = 'dotted';
                     }
 
                     // Use exact values without rounding
                     nodesData.push([
                         element.id,
-                        element.attr('label/text') || '',
-                        element.get('tooltip') || '',
-                        size.width,  // Export exact width
-                        size.height, // Export exact height
-                        element.attr('body/fill') || element.attr('body/stroke') || '',
-                        position.x,  // Export exact X position
-                        position.y,  // Export exact Y position
-                        type
+                        element.attr('label/text') || element.attr('text/text') || '',
+                        element.get('tooltip') || element.prop('tooltip') || '',
+                        size.width,
+                        size.height,
+                        element.attr('body/fill') || '',
+                        element.attr('body/stroke') || element.attr('body/fill') || '',
+                        element.attr('body/strokeWidth') || 1,
+                        borderType,
+                        element.prop('fontType') || element.attr('label/fontFamily') || 'Arial, sans-serif',
+                        element.attr('label/fontSize') || 14,
+                        element.attr('label/fill') || '#FFFFFF',
+                        position.x,
+                        position.y,
+                        type,
+                        element.prop('labelStyle') || ''
                     ]);
                 });
 
@@ -1550,12 +1842,26 @@
                         const target = link.getTargetElement();
 
                         if (source && target) {
+                            // Get link label - first check the property, then the labels array
+                            let linkLabel = '';
+                            if (link.prop('linkLabel')) {
+                                linkLabel = link.prop('linkLabel');
+                            } else if (link.labels && link.labels.length > 0) {
+                                const label = link.labels[0];
+                                if (label && label.attrs && label.attrs.text && label.attrs.text.text) {
+                                    linkLabel = label.attrs.text.text;
+                                }
+                            }
+
+                            // Log for debugging
+                            console.log('Exporting link label:', linkLabel, 'Link:', link);
+
                             linksData.push([
                                 source.id,
                                 target.id,
                                 link.attr('line/stroke') || '',
-                                link.get('linkLabel') || '',
-                                link.get('tooltip') || ''
+                                linkLabel,
+                                link.get('tooltip') || link.prop('tooltip') || ''
                             ]);
                         }
                     } catch (e) {
@@ -1598,29 +1904,13 @@
             }, 1000);
         }
 
-        // Add hover effects for links
+        // Add hover effects for links - only for tooltips, not visibility
         paper.on('link:mouseenter', function(linkView, evt) {
+            // Only handle tooltip display on hover, don't change link visibility
             const link = linkView.model;
-            link.attr('line/strokeWidth', 7); // Increase to 7 for hover effect
-            link.attr('line/opacity', 1);
-
-            // Get the connected nodes to highlight them
-            const source = link.getSourceCell();
-            const target = link.getTargetCell();
-
-            // Keep source node's color on hover
-            if (source) {
-                const sourceColor = source.attr('body/fill');
-                link.attr('line/stroke', sourceColor);
-                source.attr('body/strokeWidth', 3);
-            }
-
-            if (target) {
-                target.attr('body/strokeWidth', 3);
-            }
-
+            
             // Show tooltip if available
-            const tooltip = link.get('tooltip');
+            const tooltip = link.prop('tooltip');
             if (tooltip && tooltip.trim()) {
                 const nodeTooltip = document.getElementById('nodeTooltip');
                 setTooltipContent(nodeTooltip, tooltip);
@@ -1631,15 +1921,70 @@
             }
         });
 
-        // Add mousemove handler for links
+        // Add mousemove handler for links - for tooltip positioning only
         paper.on('link:mousemove', function(linkView, evt) {
             const link = linkView.model;
-            const tooltip = link.get('tooltip');
+            const tooltip = link.prop('tooltip');
 
             if (tooltip && tooltip.trim()) {
                 const nodeTooltip = document.getElementById('nodeTooltip');
                 if (nodeTooltip.style.display === 'block') {
                     positionTooltip(nodeTooltip, evt.clientX, evt.clientY);
+                }
+            }
+        });
+
+        // Hide tooltip when mouse leaves link
+        paper.on('link:mouseleave', function(linkView) {
+            // Only hide the tooltip, don't change link visibility
+            const nodeTooltip = document.getElementById('nodeTooltip');
+            nodeTooltip.style.display = 'none';
+        });
+        
+        // Toggle link visibility when clicked
+        paper.on('link:pointerclick', function(linkView) {
+            const link = linkView.model;
+            const currentOpacity = link.attr('line/opacity');
+            
+            // Toggle link visibility (opacity 0 or 1)
+            const newOpacity = currentOpacity === 0 ? 1 : 0;
+            link.attr('line/opacity', newOpacity);
+            link.attr('line/strokeWidth', newOpacity === 1 ? 5 : 4);
+            
+            // If link becomes visible, show its label
+            if (newOpacity === 1) {
+                // Make line thicker when visible
+                link.attr('line/strokeWidth', 5);
+                
+                // Show the label
+                if (link.labels && link.labels.length > 0) {
+                    link.labels().forEach(label => {
+                        link.label(label.idx, {
+                            attrs: {
+                                text: { opacity: 1 },
+                                rect: { opacity: 1 }
+                            }
+                        });
+                    });
+                }
+                
+                // Use source node's color for the link
+                const source = link.getSourceCell();
+                if (source) {
+                    const sourceColor = source.attr('body/fill');
+                    link.attr('line/stroke', sourceColor);
+                }
+            } else {
+                // Hide the label when link is hidden
+                if (link.labels && link.labels.length > 0) {
+                    link.labels().forEach(label => {
+                        link.label(label.idx, {
+                            attrs: {
+                                text: { opacity: 0 },
+                                rect: { opacity: 0 }
+                            }
+                        });
+                    });
                 }
             }
         });
@@ -1725,56 +2070,6 @@
             tooltipElement.style.left = x + 'px';
             tooltipElement.style.top = y + 'px';
         }
-
-        // Hide tooltip when mouse leaves link
-        paper.on('link:mouseleave', function(linkView) {
-            const link = linkView.model;
-            const source = link.getSourceCell();
-            const target = link.getTargetCell();
-
-            // Hide tooltip
-            const nodeTooltip = document.getElementById('nodeTooltip');
-            nodeTooltip.style.display = 'none';
-
-            // Reset link appearance
-            // Check if we're in active node mode
-            if (activeNode) {
-                // Only reduce opacity if the link is not connected to active node
-                if ((source && source.id === activeNode) || (target && target.id === activeNode)) {
-                    link.attr('line/strokeWidth', 4);
-                    link.attr('line/opacity', 1);
-
-                    // Keep source node's color
-                    if (source) {
-                        const sourceColor = source.attr('body/fill');
-                        link.attr('line/stroke', sourceColor);
-                    }
-                } else {
-                    link.attr('line/strokeWidth', 4);
-                    link.attr('line/opacity', 0);
-                }
-
-                // Reset stroke width of nodes that aren't the active node
-                if (source && source.id !== activeNode) {
-                    source.attr('body/strokeWidth', source.id === activeNode ? 4 : 2);
-                }
-                if (target && target.id !== activeNode) {
-                    target.attr('body/strokeWidth', target.id === activeNode ? 4 : 2);
-                }
-            } else {
-                // If no active node, return to default state
-                link.attr('line/strokeWidth', 4);
-                link.attr('line/opacity', 0);
-
-                // Reset stroke width of nodes
-                if (source) {
-                    source.attr('body/strokeWidth', 2);
-                }
-                if (target) {
-                    target.attr('body/strokeWidth', 2);
-                }
-            }
-        });
 
         // Zoom functionality
         let currentScale = 1;
@@ -1917,6 +2212,18 @@
                     // Immediately show this link with source node's color
                     link.attr('line/opacity', 1);
                     link.attr('line/strokeWidth', 4);
+
+                    // Show labels on this link if they exist
+                    if (link.labels && link.labels.length > 0) {
+                        link.labels().forEach(label => {
+                            link.label(label.idx, {
+                                attrs: {
+                                    text: { opacity: 1 },
+                                    rect: { opacity: 1 }
+                                }
+                            });
+                        });
+                    }
 
                     // Use the parent (source) node color
                     const sourceColor = source.attr('body/fill');
