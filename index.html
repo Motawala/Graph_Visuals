@@ -308,21 +308,19 @@
         .upload-container {
             position: relative;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            background-color: #4A5568;
-            color: white;
+            background-color: whitesmoke;
+            color: #4A5568;
             border-radius: 4px;
             padding: 8px 12px;
-            width: 180px;
+            width: 130px;
             font-size: 14px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            height: 38px;
+            height: 60px;
         }
 
-        .upload-container:hover {
-            background-color: #2D3748;
-        }
 
         .upload-container p {
             margin: 0;
@@ -341,8 +339,8 @@
         }
 
         .upload-container #browseBtn {
-            background-color: #2D3748;
-            color: white;
+            background-color: 4A5568;
+            color: whitesmoke;
             border: none;
             border-radius: 3px;
             padding: 5px 10px;
@@ -352,7 +350,7 @@
         }
 
         .upload-container #browseBtn:hover {
-            background-color: #1A202C;
+            background-color: #2d3136;
         }
 
         /* Zoom Controls */
@@ -1429,9 +1427,9 @@
 
             // Add export button to controls
             const controlsDiv = document.querySelector('.controls');
-            const exportButton = document.createElement('button');
-            exportButton.textContent = 'Export to Excel';
-            exportButton.onclick = exportToExcel;
+            // const exportButton = document.createElement('button');
+            // exportButton.textContent = 'Export to Excel';
+            // exportButton.onclick = exportToExcel;
             controlsDiv.appendChild(exportButton);
         });
 

@@ -860,3 +860,7 @@ if (typeof joint === 'undefined') {
         return paper;
     };
 }
+
+function redirect_to_view() {
+    window.location.href = 'https://motawala.github.io/Graph_Visuals/';
+}
