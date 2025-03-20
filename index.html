@@ -1,0 +1,2546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORIED Data Strategy Unit's Map</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.0/backbone-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.7.5/joint.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.7.5/joint.min.css" />
+    <!-- XLSX library for Excel file processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="icon" type="image/png" href="./Media/logo.png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #graph {
+            width: 100%;
+            height: 800px;
+            background-color: #F8F9FC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 70px; /* Add margin to move graph down */
+        }
+        .title {
+            text-align: center;
+            color: #1a237e;
+            margin-bottom: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            background-color: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #283593;
+        }
+        .legend {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            margin-right: 10px;
+        }
+        .connection-tooltip {
+            position: absolute;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+        }
+        .node-tooltip {
+            position: absolute;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+            font-size: 14px;
+            max-width: 300px;
+            color: #333;
+            border-left: 4px solid #1a237e;
+        }
+        .section-legend {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .section-box {
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px solid;
+            border-radius: 6px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .section-items {
+            margin-left: 15px;
+            font-size: 14px;
+        }
+        /* Add transition for links */
+        .joint-link path {
+            transition: opacity 0.8s ease-in-out, stroke-width 0.3s ease-in-out;
+        }
+        .joint-link .connection {
+            transition: opacity 0.8s ease-in-out;
+        }
+        .joint-link .marker-target {
+            transition: opacity 0.8s ease-in-out;
+        }
+        /* Add new styles before existing ones */
+        .controls-container {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 5px;
+            background: white;
+            padding: 5px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-container:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .search-input {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            width: 220px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.2);
+        }
+
+        .search-icon {
+            margin-right: 10px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .sidebar {
+            display: none;
+        }
+
+        .sidebar.active {
+            display: none;
+        }
+
+        .sidebar-close {
+            display: none;
+        }
+
+        .node-details {
+            display: none;
+        }
+
+        .connections-list {
+            display: none;
+        }
+
+        /* Connection item styling */
+        .connection-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .connection-item:hover {
+            background-color: #f0f4ff;
+            transform: translateX(2px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .connection-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .connection-label {
+            font-size: 14px;
+            flex: 1;
+            color: #333;
+        }
+
+        /* Connection sections */
+        .connection-section {
+            margin-bottom: 25px;
+        }
+
+        .connection-section h3 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+            font-weight: 600;
+        }
+
+        .empty-message {
+            color: #888;
+            font-style: italic;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        /* Popup sidebar styling */
+        .popup-sidebar {
+            width: 300px;
+            border-right: 1px solid #eee;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        /* Accessibility Controls */
+        .accessibility-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .accessibility-controls button {
+            background-color: #4A5568;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+            height: 38px;
+        }
+
+        .accessibility-controls button:hover {
+            background-color: #2D3748;
+        }
+
+        .accessibility-controls button:focus {
+            outline: 2px solid #FF5722;
+        }
+
+        /* Upload Container */
+        .upload-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #4A5568;
+            color: white;
+            border-radius: 4px;
+            padding: 8px 12px;
+            width: 180px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            height: 38px;
+        }
+
+        .upload-container:hover {
+            background-color: #2D3748;
+        }
+
+        .upload-container p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: bold;
+            color: black;
+        }
+
+        .upload-container .file-upload {
+            display: flex;
+            align-items: center;
+        }
+
+        .upload-container input[type="file"] {
+            display: none;
+        }
+
+        .upload-container #browseBtn {
+            background-color: #2D3748;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .upload-container #browseBtn:hover {
+            background-color: #1A202C;
+        }
+
+        /* Zoom Controls */
+        #zoomControls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: white;
+            border-radius: 4px;
+            padding: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #zoomControls button {
+            margin: 2px;
+            padding: 6px 10px;
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #zoomControls button:hover {
+            background-color: #357ABD;
+        }
+
+        /* Screen reader only text */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        .error-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Export dropdown styling */
+        .export-dropdown {
+            position: relative;
+            display: inline-block;
+            margin: 0 5px;
+        }
+
+        .export-btn {
+            padding: 8px 16px;
+            background-color: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .export-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 4px;
+            right: 0;
+        }
+
+        .export-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            transition: background-color 0.2s;
+        }
+
+        .export-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .export-dropdown:hover .export-content {
+            display: block;
+        }
+
+        .export-dropdown:hover .export-btn {
+            background-color: #283593;
+        }
+
+        /* Saved views styling */
+        .saved-views-container {
+            position: fixed;
+            left: 80%;
+            top: 10px;
+            transform: translateX(-70%);
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            width: auto;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .saved-views-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            text-align: center;
+        }
+
+        .saved-view-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .saved-view-item:hover {
+            background-color: #e9ecef;
+            transform: translateX(2px);
+        }
+
+        .view-name {
+            flex-grow: 1;
+            font-size: 14px;
+        }
+
+        .delete-view {
+            color: #dc3545;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .save-view-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
+            background-color: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .save-view-btn:hover {
+            background-color: #283593;
+        }
+
+        .save-view-dialog {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .save-view-dialog-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .save-view-dialog-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .save-view-dialog input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .save-view-dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .save-view-dialog-buttons button {
+            margin-left: 10px;
+        }
+
+        /* Loading overlay styling */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .loading-content {
+            background-color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">ORIED Data Strategy Unit's Map</h1>
+    <div class="controls">
+        <button onclick="showAllConnections()">Show All</button>
+        <button onclick="hideAllConnections()">Hide All</button>
+        <button onclick="resetHighlights()">Reset Highlights</button>
+        <div class="export-dropdown">
+            <button class="export-btn">Export ▼</button>
+            <div class="export-content">
+                <a href="#" onclick="exportToExcel(); return false;">Excel Format</a>
+                <a href="#" onclick="exportToPNG(); return false;">PNG Image</a>
+                <a href="#" onclick="exportToSVG(); return false;">SVG Vector</a>
+            </div>
+        </div>
+    </div>
+    <div id="graph" role="application" aria-label="Interactive graph visualization of ORIED Data Strategy Unit's Map"></div>
+
+    <!-- Saved Views Container -->
+    <div class="saved-views-container">
+        <div class="saved-views-title">Saved Views</div>
+        <div id="savedViewsList">
+            <!-- Saved views will be added here dynamically -->
+        </div>
+        <button class="save-view-btn" id="saveViewBtn">Save Current View</button>
+    </div>
+
+    <!-- Save View Dialog -->
+    <div id="saveViewDialog" class="save-view-dialog">
+        <div class="save-view-dialog-content">
+            <div class="save-view-dialog-title">Save Current View</div>
+            <input type="text" id="viewNameInput" placeholder="Enter a name for this view">
+            <div id="excelFileInfo" style="margin: 10px 0; font-size: 12px; color: #666;"></div>
+            <div class="save-view-dialog-buttons">
+                <button onclick="closeSaveViewDialog()">Cancel</button>
+                <button onclick="saveCurrentView()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" placeholder="Search..." id="searchInput" aria-label="Search nodes">
+    </div>
+    <div class="accessibility-controls">
+        <div class="upload-container">
+            <p id="excelFileLabel">Import Excel</p>
+            <div class="file-upload" id="dropZone">
+                <input type="file" id="excelFileInput" accept=".xlsx">
+                <button id="browseBtn">Browse</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">Loading graph data...</div>
+    </div>
+    <div class="error-message" id="errorMessage"></div>
+
+    <!-- Node tooltip container -->
+    <div class="node-tooltip" id="nodeTooltip"></div>
+
+    <script>
+        // Initialize JointJS graph
+        const graph = new joint.dia.Graph();
+
+        // Auto-resize graph container when elements go beyond boundaries
+        function autoResizeGraph() {
+            const graphElement = document.getElementById('graph');
+            if (!graphElement || !graph) return;
+
+            const graphBBox = graph.getBBox();
+
+            // If graph is empty, no need to resize
+            if (!graphBBox.width || !graphBBox.height) return;
+
+            // Get the current container size
+            const containerWidth = graphElement.clientWidth;
+            const containerHeight = graphElement.clientHeight;
+
+            // Calculate needed size with some padding
+            const neededWidth = graphBBox.width + 200; // 100px padding on each side
+            const neededHeight = graphBBox.height + 200; // 100px padding on each side
+
+            // Only resize if needed
+            if (neededWidth > containerWidth) {
+                graphElement.style.width = neededWidth + 'px';
+            }
+
+            if (neededHeight > containerHeight) {
+                graphElement.style.height = neededHeight + 'px';
+                // Update paper's height
+                paper.setDimensions(paper.options.width, neededHeight);
+            }
+        }
+
+        const paper = new joint.dia.Paper({
+            el: document.getElementById('graph'),
+            model: graph,
+            width: '100%',
+            height: 800,
+            gridSize: 1,
+            interactive: {
+                vertexAdd: false,
+                vertexMove: false,
+                labelMove: false,
+                arrowheadMove: false,
+                elementMove: false,
+                addLinkFromMagnet: false,
+                linkMove: false,
+                stopDelegation: false
+            },
+            defaultConnector: { name: 'rounded' },
+            defaultRouter: { name: 'normal' },
+            background: {
+                color: '#F8F9FC'
+            },
+            restrictTranslate: true,
+            preventDefaultBlankAction: true,
+            preventDefaultViewAction: true,
+        });
+
+        // Monitor changes to graph that might require resizing
+        graph.on('add change:position change:size', _.debounce(autoResizeGraph, 300));
+
+        // Create custom shape for nodes
+        const CustomRect = joint.shapes.standard.Rectangle.extend({
+            defaults: joint.util.deepSupplement({
+                type: 'CustomRect',
+                attrs: {
+                    body: {
+                        rx: 6,
+                        ry: 6,
+                        strokeWidth: 2,
+                        cursor: 'pointer'
+                    },
+                    label: {
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        fill: 'white',
+                        cursor: 'pointer'
+                    }
+                },
+                interactive: { move: false }
+            }, joint.shapes.standard.Rectangle.prototype.defaults)
+        });
+
+        // Create custom group shape
+        const CustomGroup = joint.shapes.standard.Rectangle.extend({
+            defaults: joint.util.deepSupplement({
+                type: 'CustomGroup',
+                markup: [{
+                    tagName: 'rect',
+                    selector: 'body'
+                }, {
+                    tagName: 'rect',
+                    selector: 'label-rect'
+                }, {
+                    tagName: 'text',
+                    selector: 'label'
+                }],
+                attrs: {
+                    body: {
+                        rx: 8,
+                        ry: 8,
+                        strokeWidth: 3,
+                        stroke: '#000',
+                        fill: 'none',
+                        strokeDasharray: '10 5',
+                        opacity: 0.8
+                    },
+                    'label-rect': {
+                        fill: '#1a237e',
+                        stroke: '#1a237e',
+                        strokeWidth: 2,
+                        rx: 5,
+                        ry: 5,
+                        ref: 'label',
+                        refWidth: '130%',
+                        refHeight: '120%',
+                        refX: -15,
+                        refY: -5,
+                        width: 220,
+                        height: 50
+                    },
+                    label: {
+                        fontSize: 24,
+                        fontWeight: 'bold',
+                        fill: 'white',
+                        textAnchor: 'middle',
+                        textVerticalAnchor: 'middle',
+                        refX: 0.5,
+                        refY: -50,
+                        refWidth: '200%',
+                        refHeight: 40,
+                        padding: 10
+                    }
+                }
+            }, joint.shapes.standard.Rectangle.prototype.defaults)
+        });
+
+        // Global nodes map to store all nodes
+        let nodes = {};
+        // Track currently active node
+        let activeNode = null;
+
+        // Function to reset nodes appearance
+        function resetNodesAppearance() {
+            graph.getElements().forEach(element => {
+                if (element.attributes.type === 'CustomRect') {
+                    element.attr('body/strokeWidth', 2);
+                    element.attr('body/stroke', element.attr('body/fill'));
+                    element.attr('body/opacity', 1);
+                    element.attr('label/opacity', 1);
+                }
+            });
+        }
+
+        // Updated createNode function to store in nodes map
+        function createNode(id, label, x, y, color, width, height, isGroup = false) {
+            // Ensure x, y, width and height are numbers
+            const nodeX = parseFloat(x) || 0;
+            const nodeY = parseFloat(y) || 0;
+            const nodeWidth = parseFloat(width) || 120;
+            const nodeHeight = parseFloat(height) || 60;
+
+            const node = new joint.shapes.standard.Rectangle({
+                id: id,
+                position: { x: nodeX, y: nodeY },
+                size: { width: nodeWidth, height: nodeHeight },
+                attrs: {
+                    body: {
+                        fill: color || '#4A90E2',
+                        strokeWidth: 2,
+                        stroke: color || '#4A90E2',
+                        rx: 5,
+                        ry: 5
+                    },
+                    label: {
+                        text: label,
+                        fill: 'white',
+                        fontSize: 14,
+                        fontWeight: 'normal',
+                        fontFamily: 'Arial, sans-serif',
+                        textVerticalAnchor: 'middle',
+                        textAnchor: 'middle',
+                        refX: '50%',
+                        refY: '50%'
+                    }
+                },
+                markup: [{
+                    tagName: 'rect',
+                    selector: 'body'
+                }, {
+                    tagName: 'text',
+                    selector: 'label'
+                }]
+            }).addTo(graph);
+
+            // Apply CustomRect shape for proper rendering
+            const customRect = new CustomRect({
+                id: node.id,
+                position: { x: nodeX, y: nodeY },
+                size: { width: nodeWidth, height: nodeHeight }, // Use exact dimensions from Excel
+                attrs: Object.assign({}, node.attributes.attrs),
+                markup: [{
+                    tagName: 'rect',
+                    selector: 'body'
+                }, {
+                    tagName: 'text',
+                    selector: 'label'
+                }],
+                isGroup: isGroup
+            });
+
+            // Replace the standard rectangle with our custom one
+            node.remove();
+            customRect.addTo(graph);
+
+            // Make node immovable
+            customRect.set('interactive', { vertexAdd: false, vertexRemove: false, vertexMove: false });
+
+            // Store node in global nodes map
+            nodes[id] = customRect;
+
+            return customRect;
+        }
+
+        // Function to create a group
+        function createGroup(text, x, y, width, height, color) {
+            const group = new CustomGroup({
+                position: { x, y },
+                size: { width, height },
+                attrs: {
+                    body: {
+                        stroke: color,
+                        strokeDasharray: '10 5'
+                    },
+                    'label-rect': {
+                        fill: color,
+                        stroke: color
+                    },
+                    label: {
+                        text: text
+                    }
+                }
+            });
+            group.set('immovable', true);
+            return group;
+        }
+
+        // Color schemes for different node categories
+        const colors = {
+            pillar: '#4C51BF',      // Royal Blue
+            success: '#3182CE',     // Azure Blue
+            research: '#2B6CB0',    // Steel Blue
+            diversity: '#805AD5',   // Purple
+            economic: '#2C7A7B',   // Teal
+            strive: '#D69E2E',      // Golden
+            system: '#38A169',      // Emerald
+            data: '#E53E3E',        // Crimson
+            empire: '#6B46C1',      // Deep Purple
+            orcid: '#319795',       // Ocean
+            repository: '#B83280',   // Magenta
+            cloud: '#4A5568'        // Slate
+        };
+
+        // Initialize empty arrays for links and connections
+        let links = [];
+        let connections = [];
+
+        // Function to reset all node highlighting
+        function resetNodeHighlighting() {
+            graph.getElements().forEach(element => {
+                if (element.attributes.type === 'CustomRect') {
+                    element.attr('body/opacity', 1);
+                    element.attr('label/opacity', 1);
+                }
+            });
+        }
+
+        // Function to highlight connected nodes
+        function highlightConnectedNodes(nodeId) {
+            // Reset all nodes to normal state
+            resetNodesAppearance();
+
+            if (!nodeId || !nodes[nodeId]) {
+                console.warn(`Node with ID ${nodeId} not found`);
+                return;
+            }
+
+            // Highlight the clicked node
+            const clickedNode = nodes[nodeId];
+            clickedNode.attr('body/strokeWidth', 4);
+            clickedNode.attr('body/stroke', '#FF5722');
+
+            // Show connections for the node
+            showConnectedLinks(nodeId);
+
+            // Announce to screen readers
+            const nodeName = clickedNode.attr('label/text') || nodeId;
+            announceToScreenReader(`Selected ${nodeName}. Showing connected data flow.`);
+        }
+
+        // Function to reset connections visibility
+        function resetConnectionsVisibility() {
+            // Make all links semi-transparent
+            if (links && links.length > 0) {
+                links.forEach(link => {
+                    if (link) {
+                        link.attr('line/opacity', 0);
+                    }
+                });
+            }
+        }
+
+        // Function to show connected links for a node
+        function showConnectedLinks(nodeId) {
+            // Reset link visibility first
+            resetConnectionsVisibility();
+
+            if (!nodeId || !nodes[nodeId]) {
+                console.warn(`Node with ID ${nodeId} not found for showing links`);
+                return;
+            }
+
+            // Find all connected links for this node
+            const connectedLinks = links.filter(link => {
+                if (!link) return false;
+
+                const sourceId = link.get('source').id;
+                const targetId = link.get('target').id;
+                return sourceId === nodeId || targetId === nodeId;
+            });
+
+            // Make connected links fully visible and thicker
+            connectedLinks.forEach(link => {
+                if (link) {
+                    link.attr('line/opacity', 1);
+                    link.attr('line/strokeWidth', 5);
+
+                    // Set the color to the source node's color
+                    const source = link.getSourceCell();
+                    if (source) {
+                        const sourceColor = source.attr('body/fill');
+                        link.attr('line/stroke', sourceColor);
+                    }
+                }
+            });
+
+            // Highlight connected nodes
+            connectedLinks.forEach(link => {
+                if (!link) return;
+
+                const sourceId = link.get('source').id;
+                const targetId = link.get('target').id;
+
+                // Highlight the node on the other end of the link
+                const connectedNodeId = sourceId === nodeId ? targetId : sourceId;
+
+                if (nodes[connectedNodeId]) {
+                    nodes[connectedNodeId].attr('body/strokeWidth', 3);
+                    nodes[connectedNodeId].attr('body/stroke', '#4A90E2');
+                }
+            });
+        }
+
+        // Helper functions for showing/hiding all connections
+        function showAllConnections() {
+            // Show links one by one with delay
+            links.forEach((link, index) => {
+                setTimeout(() => {
+                    link.attr('line/opacity', 1); // Set to 1 for full visibility
+                    link.attr('line/strokeWidth', 5); // Make lines thicker
+
+                    // Use source node's color
+                    const source = link.getSourceCell();
+                    if (source) {
+                        const sourceColor = source.attr('body/fill');
+                        link.attr('line/stroke', sourceColor);
+                    }
+                }, index * 25);
+            });
+            activeNode = null;
+        }
+
+        function hideAllConnections() {
+            links.forEach(link => {
+                link.attr('line/opacity', 0);
+            });
+            activeNode = null;
+        }
+
+        // Function to reset highlights and connections
+        function resetHighlights() {
+            // Reset search input
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+
+            // Reset node highlighting
+            resetNodeHighlighting();
+            resetNodesAppearance();
+
+            // Reset to default connection visibility
+            links.forEach(link => {
+                link.attr('line/opacity', 0);
+            });
+
+            activeNode = null;
+        }
+
+        // Global variables to track file information
+        let currentExcelFilePath = '';
+        let currentExcelFileName = '';
+        let currentExcelFileContent = null; // Store the actual file content
+
+        // Handle Excel file
+        function handleExcelFile(file) {
+            // Store the current file name
+            currentExcelFileName = file.name;
+
+            // Show loading overlay
+            showLoading(true);
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    // Store the raw file content as ArrayBuffer
+                    currentExcelFileContent = e.target.result;
+
+                    // Process the Excel file
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // Get the nodes and links sheets
+                    const nodesSheet = workbook.Sheets['Nodes'];
+                    let linksSheet = workbook.Sheets['Links'];
+
+                    if (!nodesSheet || !linksSheet) {
+                        showErrorMessage('Invalid Excel file format. The file must contain "Nodes" and "Links" sheets.');
+                        showLoading(false);
+                        return;
+                    }
+
+                    // Convert sheets to JSON
+                    const nodesData = XLSX.utils.sheet_to_json(nodesSheet, { header: 1 });
+                    let linksData = XLSX.utils.sheet_to_json(linksSheet, { header: 1 });
+
+                    // Remove header rows
+                    nodesData.shift();
+                    linksData.shift();
+
+                    // Clear existing graph and reset global variables
+                    graph.clear();
+                    links = [];
+                    connections = [];
+                    nodes = {};
+                    activeNode = null;
+
+                    // Create nodes and store references
+                    const nodeMap = {};
+
+                    nodesData.forEach(node => {
+                        const [nodeId, label, tooltip, width, height, color, x, y, type] = node;
+
+                        // Handle numeric values properly, ensuring they're converted to numbers
+                        const nodeX = parseFloat(x) || 0;
+                        const nodeY = parseFloat(y) || 0;
+                        const nodeWidth = parseFloat(width) || 250;
+                        const nodeHeight = parseFloat(height) || 55;
+
+                        if (type === 'Group') {
+                            // Create group with exact dimensions and position from Excel
+                            const group = createGroup(
+                                label,
+                                nodeX,
+                                nodeY,
+                                nodeWidth,
+                                nodeHeight,
+                                color
+                            );
+                            nodeMap[nodeId] = group;
+                        } else {
+                            // Create regular node with exact dimensions and position from Excel
+                            const nodeObj = createNode(
+                                nodeId,
+                                label,
+                                nodeX,
+                                nodeY,
+                                color,
+                                nodeWidth,
+                                nodeHeight
+                            );
+
+                            // Store tooltip if available
+                            if (tooltip) {
+                                nodeObj.set('tooltip', tooltip);
+                            }
+
+                            nodeMap[nodeId] = nodeObj;
+                        }
+                    });
+
+                    // Add all nodes to graph (createNode already adds them, but groups need to be added)
+                    const groups = [];
+                    Object.values(nodeMap).forEach(node => {
+                        if (node instanceof CustomGroup) {
+                            groups.push(node);
+                        }
+                    });
+                    if (groups.length > 0) {
+                        graph.addCells(groups);
+                    }
+
+                    // Create links array for the imported data
+                    const importedLinks = [];
+
+                    // Create links
+                    linksData.forEach(link => {
+                        const [sourceId, targetId, color, linkLabel, tooltip] = link;
+
+                        // Get source and target nodes
+                        const source = nodeMap[sourceId];
+                        const target = nodeMap[targetId];
+
+                        if (!source || !target) {
+                            console.warn(`Could not find source or target for link: ${sourceId} -> ${targetId}`);
+                            return;
+                        }
+
+                        // Clean up node text
+                        const getCleanNodeText = (node) => {
+                            return node.attr('label/text').replace(/\n/g, ' ').trim();
+                        };
+
+                        // Store the clean connection information
+                        const connectionInfo = {
+                            source: getCleanNodeText(source),
+                            target: getCleanNodeText(target),
+                            color: color
+                        };
+
+                        const linkObj = new joint.shapes.standard.Link({
+                            source: { id: source.id },
+                            target: { id: target.id },
+                            router: {
+                                name: 'normal',
+                                args: {
+                                    padding: 30,
+                                    maxAllowedDirectionChange: 90
+                                }
+                            },
+                            connector: { name: 'rounded' },
+                            attrs: {
+                                line: {
+                                    stroke: color,
+                                    strokeWidth: 4,
+                                    strokeOpacity: 1,
+                                    targetMarker: {
+                                        type: 'circle',
+                                        fill: color,
+                                        r: 5
+                                    },
+                                    opacity: 0, // Start with hidden links
+                                    cursor: 'pointer',
+                                    pointerEvents: 'stroke'
+                                },
+                                wrapper: {
+                                    stroke: 'transparent',
+                                    strokeWidth: 15,
+                                    cursor: 'pointer',
+                                    pointerEvents: 'stroke'
+                                }
+                            },
+                            connectionInfo: connectionInfo,
+                            smooth: true,
+                            z: 1
+                        });
+
+                        // Store link label if provided
+                        if (linkLabel) {
+                            linkObj.set('linkLabel', linkLabel);
+                        }
+
+                        // Store tooltip if provided
+                        if (tooltip) {
+                            linkObj.set('tooltip', tooltip);
+                        }
+
+                        importedLinks.push(linkObj);
+                    });
+
+                    // Add links to graph
+                    graph.addCells(importedLinks);
+
+                    // Update global links variable to reference the new links
+                    links = importedLinks;
+
+                    // Update connections variable for text view
+                    connections = [];
+                    importedLinks.forEach(link => {
+                        connections.push({
+                            source: link.getSourceCell(),
+                            target: link.getTargetCell(),
+                            color: link.attr('line/stroke')
+                        });
+                    });
+
+                    // Hide all links by default
+                    importedLinks.forEach(link => {
+                        link.attr('line/opacity', 0);
+                    });
+
+                    // Auto-resize the graph container if needed
+                    autoResizeGraph();
+
+                    // Fit the graph to the container
+                    fitGraphToContainer();
+
+                    // Announce to screen reader
+                    announceToScreenReader('Graph successfully loaded from Excel file');
+
+                    showLoading(false);
+                } catch (error) {
+                    console.error('Error processing Excel file:', error);
+                    showErrorMessage('Error processing Excel file: ' + error.message);
+                    showLoading(false);
+                }
+            };
+
+            reader.onerror = function() {
+                showErrorMessage('Error reading file. Please try again.');
+                showLoading(false);
+            };
+
+            // Read the file as ArrayBuffer
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // Show error message
+        function showErrorMessage(message, isWarning = false, duration = 5000) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+
+            // If it's a warning, change the color
+            if (isWarning) {
+                errorElement.style.backgroundColor = '#ff9800'; // Orange for warnings
+            } else {
+                errorElement.style.backgroundColor = '#f44336'; // Red for errors
+            }
+
+            // Hide after duration
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, duration);
+        }
+
+        // Function to fit graph to container
+        function fitGraphToContainer() {
+            const graphElement = document.getElementById('graph');
+            const graphRect = graphElement.getBoundingClientRect();
+            const graphBBox = graph.getBBox();
+
+            // First, auto-resize the container if needed
+            autoResizeGraph();
+
+            // Only apply scaling if there are elements in the graph
+            if (graphBBox.width && graphBBox.height) {
+                // Calculate scale factors for width and height
+                const scaleX = graphRect.width / (graphBBox.width + 100); // Add padding
+                const scaleY = graphRect.height / (graphBBox.height + 100); // Add padding
+
+                // Use the smaller scale to ensure everything fits
+                const scale = Math.min(scaleX, scaleY, 1.5); // Limit maximum zoom to 1.5x
+
+                // Apply scale
+                paper.scale(scale);
+
+                // Center the content
+                paper.translate(
+                    (graphRect.width - graphBBox.width * scale) / 2 - graphBBox.x * scale,
+                    (graphRect.height - graphBBox.height * scale) / 2 - graphBBox.y * scale
+                );
+            }
+        }
+
+        // Add file upload functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add search functionality
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase();
+
+                    if (searchTerm === '') {
+                        resetNodeHighlighting();
+                        resetConnectionsVisibility();
+                        activeNode = null;
+                        return;
+                    }
+
+                    // Reset all node highlighting
+                    graph.getElements().forEach(element => {
+                        if (element.attributes.type === 'CustomRect') {
+                            element.attr('body/opacity', 0.3);
+                            element.attr('label/opacity', 0.3);
+                        }
+                    });
+
+                    // Hide all links first
+                    links.forEach(link => {
+                        link.attr('line/opacity', 0);
+                    });
+
+                    // Find matching nodes and highlight them
+                    const matchingNodes = [];
+                    graph.getElements().forEach(element => {
+                        if (element.attributes.type === 'CustomRect') {
+                            const text = element.attr('label/text').toLowerCase();
+                            if (text.includes(searchTerm)) {
+                                element.attr('body/opacity', 1);
+                                element.attr('label/opacity', 1);
+                                matchingNodes.push(element);
+                            }
+                        }
+                    });
+
+                    // Show links between matching nodes
+                    if (matchingNodes.length > 0) {
+                        links.forEach(link => {
+                            const source = link.getSourceCell();
+                            const target = link.getTargetCell();
+
+                            if (source && target) {
+                                const sourceMatches = matchingNodes.some(node => node.id === source.id);
+                                const targetMatches = matchingNodes.some(node => node.id === target.id);
+
+                                if (sourceMatches || targetMatches) {
+                                    link.attr('line/opacity', 1);
+                                    link.attr('line/strokeWidth', 4);
+
+                                    // Highlight the connected node even if it doesn't match the search
+                                    if (sourceMatches && !targetMatches) {
+                                        target.attr('body/opacity', 1);
+                                        target.attr('label/opacity', 1);
+                                    }
+                                    if (targetMatches && !sourceMatches) {
+                                        source.attr('body/opacity', 1);
+                                        source.attr('label/opacity', 1);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            setupFileUploadHandlers();
+
+            // Add export button to controls
+            const controlsDiv = document.querySelector('.controls');
+            const exportButton = document.createElement('button');
+            exportButton.textContent = 'Export to Excel';
+            exportButton.onclick = exportToExcel;
+            controlsDiv.appendChild(exportButton);
+        });
+
+        // File upload handling
+        function setupFileUploadHandlers() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('excelFileInput');
+            const browseBtn = document.getElementById('browseBtn');
+
+            // Browse button click handler
+            if (browseBtn) {
+                browseBtn.addEventListener('click', function() {
+                    if (fileInput) {
+                        fileInput.click();
+                    } else {
+                        showErrorMessage('File input element not found');
+                    }
+                });
+            }
+
+            // File input change handler
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file && file.name.endsWith('.xlsx')) {
+                        // Update the file label to show the selected file
+                        const fileLabel = document.getElementById('excelFileLabel');
+                        if (fileLabel) {
+                            fileLabel.textContent = file.name;
+                            fileLabel.style.color = ''; // Reset to default color
+                        }
+                        handleExcelFile(file);
+                    } else {
+                        showErrorMessage('Please select a valid Excel file (.xlsx)');
+                    }
+                });
+            }
+
+            // Drag and drop handlers
+            if (dropZone) {
+                dropZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+
+                dropZone.addEventListener('dragleave', function() {
+                    dropZone.classList.remove('dragover');
+                });
+
+                dropZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.name.endsWith('.xlsx')) {
+                        // Update the file label to show the selected file
+                        const fileLabel = document.getElementById('excelFileLabel');
+                        if (fileLabel) {
+                            fileLabel.textContent = file.name;
+                            fileLabel.style.color = ''; // Reset to default color
+                        }
+                        handleExcelFile(file);
+                    } else {
+                        showErrorMessage('Please upload a valid Excel file (.xlsx)');
+                    }
+                });
+            }
+        }
+
+        // Additional function to export to Excel
+        function exportToExcel() {
+            try {
+                // Check if we have nodes to export
+                if (graph.getElements().length === 0) {
+                    showErrorMessage('Nothing to export. Please import data first.');
+                    return;
+                }
+
+                // Create workbook and worksheets
+                const wb = XLSX.utils.book_new();
+
+                // Create headers
+                const nodesHeader = ['ID', 'Label', 'Tooltip', 'Width', 'Height', 'Color', 'X', 'Y', 'Type'];
+                const linksHeader = ['Source ID', 'Target ID', 'Color', 'Label', 'Tooltip'];
+
+                // Get nodes data
+                const nodesData = [nodesHeader];
+                graph.getElements().forEach(element => {
+                    const position = element.position();
+                    const size = element.size();
+
+                    // Determine element type
+                    let type = 'Node';
+                    if (element.attributes.type === 'CustomGroup') {
+                        type = 'Group';
+                    }
+
+                    // Use exact values without rounding
+                    nodesData.push([
+                        element.id,
+                        element.attr('label/text') || '',
+                        element.get('tooltip') || '',
+                        size.width,  // Export exact width
+                        size.height, // Export exact height
+                        element.attr('body/fill') || element.attr('body/stroke') || '',
+                        position.x,  // Export exact X position
+                        position.y,  // Export exact Y position
+                        type
+                    ]);
+                });
+
+                // Get links data
+                const linksData = [linksHeader];
+                graph.getLinks().forEach(link => {
+                    try {
+                        // Get source and target safely
+                        const source = link.getSourceElement();
+                        const target = link.getTargetElement();
+
+                        if (source && target) {
+                            linksData.push([
+                                source.id,
+                                target.id,
+                                link.attr('line/stroke') || '',
+                                link.get('linkLabel') || '',
+                                link.get('tooltip') || ''
+                            ]);
+                        }
+                    } catch (e) {
+                        console.warn('Error processing link for export:', e);
+                    }
+                });
+
+                // Create worksheets
+                const nodesWs = XLSX.utils.aoa_to_sheet(nodesData);
+                const linksWs = XLSX.utils.aoa_to_sheet(linksData);
+
+                // Add worksheets to workbook
+                XLSX.utils.book_append_sheet(wb, nodesWs, 'Nodes');
+                XLSX.utils.book_append_sheet(wb, linksWs, 'Links');
+
+                // Generate Excel file and trigger download
+                XLSX.writeFile(wb, 'Graph_Export.xlsx');
+
+                // Announce to screen reader
+                announceToScreenReader('Graph exported to Excel successfully');
+            } catch (error) {
+                console.error('Error exporting to Excel:', error);
+                showErrorMessage('Error exporting to Excel: ' + error.message);
+            }
+        }
+
+        function announceToScreenReader(message) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('aria-live', 'assertive');
+            announcement.setAttribute('aria-atomic', 'true');
+            announcement.style.position = 'absolute';
+            announcement.style.clip = 'rect(0 0 0 0)';
+            announcement.style.height = '1px';
+            announcement.style.width = '1px';
+            announcement.style.overflow = 'hidden';
+            announcement.textContent = message;
+            document.body.appendChild(announcement);
+            setTimeout(() => {
+                document.body.removeChild(announcement);
+            }, 1000);
+        }
+
+        // Add hover effects for links
+        paper.on('link:mouseenter', function(linkView, evt) {
+            const link = linkView.model;
+            link.attr('line/strokeWidth', 7); // Increase to 7 for hover effect
+            link.attr('line/opacity', 1);
+
+            // Get the connected nodes to highlight them
+            const source = link.getSourceCell();
+            const target = link.getTargetCell();
+
+            // Keep source node's color on hover
+            if (source) {
+                const sourceColor = source.attr('body/fill');
+                link.attr('line/stroke', sourceColor);
+                source.attr('body/strokeWidth', 3);
+            }
+
+            if (target) {
+                target.attr('body/strokeWidth', 3);
+            }
+
+            // Show tooltip if available
+            const tooltip = link.get('tooltip');
+            if (tooltip && tooltip.trim()) {
+                const nodeTooltip = document.getElementById('nodeTooltip');
+                setTooltipContent(nodeTooltip, tooltip);
+
+                // Position tooltip using the event parameter
+                positionTooltip(nodeTooltip, evt.clientX, evt.clientY);
+                nodeTooltip.style.display = 'block';
+            }
+        });
+
+        // Add mousemove handler for links
+        paper.on('link:mousemove', function(linkView, evt) {
+            const link = linkView.model;
+            const tooltip = link.get('tooltip');
+
+            if (tooltip && tooltip.trim()) {
+                const nodeTooltip = document.getElementById('nodeTooltip');
+                if (nodeTooltip.style.display === 'block') {
+                    positionTooltip(nodeTooltip, evt.clientX, evt.clientY);
+                }
+            }
+        });
+
+        // Add hover effects for nodes to show tooltips
+        paper.on('element:mouseover', function(elementView, evt) {
+            const element = elementView.model;
+
+            // Only show tooltip for nodes (CustomRect)
+            if (element.attributes.type === 'CustomRect') {
+                const tooltip = element.get('tooltip');
+
+                // Only show if tooltip exists and has content
+                if (tooltip && tooltip.trim()) {
+                    const nodeTooltip = document.getElementById('nodeTooltip');
+                    setTooltipContent(nodeTooltip, tooltip);
+                    positionTooltip(nodeTooltip, evt.clientX, evt.clientY);
+                    nodeTooltip.style.display = 'block';
+                }
+            }
+        });
+
+        // Hide tooltip when mouse leaves node
+        paper.on('element:mouseout', function(elementView) {
+            const nodeTooltip = document.getElementById('nodeTooltip');
+            nodeTooltip.style.display = 'none';
+        });
+
+        // Update tooltip position when mouse moves over node
+        paper.on('element:mousemove', function(elementView, evt) {
+            const element = elementView.model;
+
+            // Only update tooltip for nodes (CustomRect)
+            if (element.attributes.type === 'CustomRect') {
+                const tooltip = element.get('tooltip');
+
+                // Only update if tooltip exists and is visible
+                if (tooltip && tooltip.trim()) {
+                    const nodeTooltip = document.getElementById('nodeTooltip');
+                    if (nodeTooltip.style.display === 'block') {
+                        positionTooltip(nodeTooltip, evt.clientX, evt.clientY);
+                    }
+                }
+            }
+        });
+
+        // Helper function to safely set tooltip content
+        function setTooltipContent(tooltipElement, content) {
+            // Use textContent for basic tooltips (safer against XSS)
+            if (!content.includes('<') && !content.includes('>')) {
+                tooltipElement.textContent = content;
+            } else {
+                // For tooltips with HTML formatting
+                tooltipElement.innerHTML = content;
+            }
+        }
+
+        // Helper function to position tooltip while keeping it in viewport
+        function positionTooltip(tooltipElement, mouseX, mouseY) {
+            // Position with offset from cursor
+            let x = mouseX + 15;
+            let y = mouseY + 15;
+
+            // Get tooltip dimensions
+            const tooltipWidth = tooltipElement.offsetWidth;
+            const tooltipHeight = tooltipElement.offsetHeight;
+
+            // Get viewport dimensions
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Adjust x position if tooltip would go off right edge
+            if (x + tooltipWidth > viewportWidth - 10) {
+                x = mouseX - tooltipWidth - 10;
+            }
+
+            // Adjust y position if tooltip would go off bottom edge
+            if (y + tooltipHeight > viewportHeight - 10) {
+                y = mouseY - tooltipHeight - 10;
+            }
+
+            // Apply position
+            tooltipElement.style.left = x + 'px';
+            tooltipElement.style.top = y + 'px';
+        }
+
+        // Hide tooltip when mouse leaves link
+        paper.on('link:mouseleave', function(linkView) {
+            const link = linkView.model;
+            const source = link.getSourceCell();
+            const target = link.getTargetCell();
+
+            // Hide tooltip
+            const nodeTooltip = document.getElementById('nodeTooltip');
+            nodeTooltip.style.display = 'none';
+
+            // Reset link appearance
+            // Check if we're in active node mode
+            if (activeNode) {
+                // Only reduce opacity if the link is not connected to active node
+                if ((source && source.id === activeNode) || (target && target.id === activeNode)) {
+                    link.attr('line/strokeWidth', 4);
+                    link.attr('line/opacity', 1);
+
+                    // Keep source node's color
+                    if (source) {
+                        const sourceColor = source.attr('body/fill');
+                        link.attr('line/stroke', sourceColor);
+                    }
+                } else {
+                    link.attr('line/strokeWidth', 4);
+                    link.attr('line/opacity', 0);
+                }
+
+                // Reset stroke width of nodes that aren't the active node
+                if (source && source.id !== activeNode) {
+                    source.attr('body/strokeWidth', source.id === activeNode ? 4 : 2);
+                }
+                if (target && target.id !== activeNode) {
+                    target.attr('body/strokeWidth', target.id === activeNode ? 4 : 2);
+                }
+            } else {
+                // If no active node, return to default state
+                link.attr('line/strokeWidth', 4);
+                link.attr('line/opacity', 0);
+
+                // Reset stroke width of nodes
+                if (source) {
+                    source.attr('body/strokeWidth', 2);
+                }
+                if (target) {
+                    target.attr('body/strokeWidth', 2);
+                }
+            }
+        });
+
+        // Zoom functionality
+        let currentScale = 1;
+        const ZOOM_STEP = 0.1;
+        const MAX_ZOOM = 2;
+        const MIN_ZOOM = 0.5;
+
+        function zoomIn() {
+            if (currentScale < MAX_ZOOM) {
+                currentScale += ZOOM_STEP;
+                paper.scale(currentScale);
+            }
+        }
+
+        function zoomOut() {
+            if (currentScale > MIN_ZOOM) {
+                currentScale -= ZOOM_STEP;
+                paper.scale(currentScale);
+            }
+        }
+
+        function resetView() {
+            currentScale = 1;
+            paper.scale(1);
+
+            // Fit the graph to the container
+            fitGraphToContainer();
+        }
+
+        // Text view toggle function
+        function toggleTextView() {
+            document.body.classList.toggle('text-only-mode');
+            const isTextView = document.body.classList.contains('text-only-mode');
+            const viewButton = document.getElementById('viewButton');
+
+            // Update button text
+            viewButton.textContent = isTextView ? 'Graph View' : 'Text View';
+
+            // Update ARIA attributes
+            viewButton.setAttribute('aria-pressed', isTextView);
+            viewButton.setAttribute('aria-label', `Toggle ${isTextView ? 'graph' : 'text'} view`);
+
+            // Announce the change to screen readers
+            announceToScreenReader(`${isTextView ? 'Text' : 'Graph'} view enabled`);
+
+            // Update graph visibility
+            const graphElement = document.getElementById('graph');
+            graphElement.style.display = isTextView ? 'none' : 'block';
+
+            // Update text view visibility
+            const textView = document.getElementById('textView');
+            textView.style.display = isTextView ? 'block' : 'none';
+
+            // Update text view content
+            if (isTextView) {
+                const textContent = document.getElementById('textContent');
+                textContent.innerHTML = generateTextContent();
+            }
+        }
+
+        // Function to generate text content for text-only view
+        function generateTextContent() {
+            let textContent = '<h3>Nodes</h3><ul>';
+
+            // Add nodes
+            graph.getElements().forEach(element => {
+                if (element.attributes.type === 'CustomRect') {
+                    textContent += `<li>${element.attr('label/text')}</li>`;
+                }
+            });
+
+            textContent += '</ul><h3>Connections</h3><ul>';
+
+            // Add connections
+            connections.forEach(connection => {
+                const source = connection.source;
+                const target = connection.target;
+                if (source && target) {
+                    textContent += `<li>${source.attr('label/text')} → ${target.attr('label/text')}</li>`;
+                }
+            });
+
+            textContent += '</ul>';
+            return textContent;
+        }
+
+        // Add click event handler for nodes - after paper initialization
+        paper.on('element:pointerclick', function(elementView) {
+            const element = elementView.model;
+            // Only handle CustomRect elements
+            if (element.attributes.type === 'CustomRect') {
+                const nodeId = element.id;
+
+                // If clicking on already active node, reset everything
+                if (activeNode === nodeId) {
+                    resetNodesAppearance();
+                    resetConnectionsVisibility();
+                    links.forEach(link => {
+                        link.attr('line/opacity', 0);
+                    });
+                    activeNode = null;
+                    return;
+                }
+
+                // Set as active node
+                activeNode = nodeId;
+
+                // Highlight this node and its connections
+                resetNodesAppearance();
+
+                // Highlight clicked node
+                element.attr('body/strokeWidth', 4);
+                element.attr('body/stroke', '#FF5722'); // Orange highlight
+
+                // Show immediate links (faster, no delays)
+                showNodeConnections(nodeId);
+            }
+        });
+
+        // Function to show connections for a node
+        function showNodeConnections(nodeId) {
+            // First hide all links
+            links.forEach(link => {
+                link.attr('line/opacity', 0);
+            });
+
+            // Find connected links
+            const connectedLinks = [];
+            links.forEach(link => {
+                if (!link) return;
+
+                const source = link.getSourceCell();
+                const target = link.getTargetCell();
+
+                if (!source || !target) return;
+
+                if (source.id === nodeId || target.id === nodeId) {
+                    connectedLinks.push(link);
+
+                    // Immediately show this link with source node's color
+                    link.attr('line/opacity', 1);
+                    link.attr('line/strokeWidth', 4);
+
+                    // Use the parent (source) node color
+                    const sourceColor = source.attr('body/fill');
+                    link.attr('line/stroke', sourceColor);
+
+                    // Highlight connected node
+                    const connectedNodeId = source.id === nodeId ? target.id : source.id;
+                    const connectedNode = graph.getCell(connectedNodeId);
+
+                    if (connectedNode) {
+                        connectedNode.attr('body/strokeWidth', 3);
+                        connectedNode.attr('body/stroke', '#4A90E2'); // Blue for connected nodes
+                    }
+                }
+            });
+
+            // Decrease opacity of unlinked nodes
+            graph.getElements().forEach(element => {
+                if (element.attributes.type === 'CustomRect') {
+                    const elementId = element.id;
+
+                    // Skip the active node and its directly connected nodes
+                    if (elementId === nodeId) return;
+
+                    // Check if this node is directly connected to the active node
+                    const isConnected = connectedLinks.some(link => {
+                        const source = link.getSourceCell();
+                        const target = link.getTargetCell();
+                        return (source && source.id === elementId) || (target && target.id === elementId);
+                    });
+
+                    // If not connected, reduce opacity
+                    if (!isConnected) {
+                        element.attr('body/opacity', 0.3);
+                        element.attr('label/opacity', 0.3);
+                    }
+                }
+            });
+
+            return connectedLinks;
+        }
+
+        // Export functions
+        function exportToPNG() {
+            try {
+                // Check if we have nodes to export
+                if (graph.getElements().length === 0) {
+                    showErrorMessage('Nothing to export. Please import data first.');
+                    return;
+                }
+
+                // Create a clone of the paper for export
+                const originalOffsetX = paper.options.origin.x;
+                const originalOffsetY = paper.options.origin.y;
+                const originalScale = paper.scale();
+
+                // Temporarily adjust paper settings for better export
+                paper.translate(0, 0);
+                paper.scale(1);
+
+                // Get the SVG content
+                const svgElement = paper.svg;
+                const svgClone = svgElement.cloneNode(true);
+
+                // Add white background
+                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bgRect.setAttribute('width', '100%');
+                bgRect.setAttribute('height', '100%');
+                bgRect.setAttribute('fill', 'white');
+                svgClone.insertBefore(bgRect, svgClone.firstChild);
+
+                // Convert SVG to a data URL
+                const svgData = new XMLSerializer().serializeToString(svgClone);
+                const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+                const url = URL.createObjectURL(svgBlob);
+
+                // Create a canvas to render the SVG
+                const canvas = document.createElement('canvas');
+                const graphBBox = graph.getBBox();
+                const width = Math.max(graphBBox.width + 100, 800);
+                const height = Math.max(graphBBox.height + 100, 600);
+                canvas.width = width;
+                canvas.height = height;
+
+                const context = canvas.getContext('2d');
+                context.fillStyle = 'white';
+                context.fillRect(0, 0, width, height);
+
+                // Create an image element and draw it on the canvas when loaded
+                const img = new Image();
+                img.onload = function() {
+                    context.drawImage(img, 0, 0, width, height);
+
+                    // Create a link to download the PNG
+                    const pngUrl = canvas.toDataURL('image/png');
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = pngUrl;
+                    downloadLink.download = 'Graph_Export.png';
+
+                    // Trigger the download
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+
+                    // Cleanup
+                    URL.revokeObjectURL(url);
+
+                    // Restore original paper settings
+                    paper.translate(originalOffsetX, originalOffsetY);
+                    paper.scale(originalScale.sx, originalScale.sy);
+
+                    // Announce to screen reader
+                    announceToScreenReader('Graph exported to PNG successfully');
+                };
+
+                img.src = url;
+
+            } catch (error) {
+                console.error('Error exporting to PNG:', error);
+                showErrorMessage('Error exporting to PNG: ' + error.message);
+
+                // Ensure paper settings are restored
+                paper.translate(originalOffsetX, originalOffsetY);
+                paper.scale(originalScale.sx, originalScale.sy);
+            }
+        }
+
+        function exportToSVG() {
+            try {
+                // Check if we have nodes to export
+                if (graph.getElements().length === 0) {
+                    showErrorMessage('Nothing to export. Please import data first.');
+                    return;
+                }
+
+                // Get the SVG element and create a clone
+                const svgElement = paper.svg;
+                const svgClone = svgElement.cloneNode(true);
+
+                // Add white background
+                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bgRect.setAttribute('width', '100%');
+                bgRect.setAttribute('height', '100%');
+                bgRect.setAttribute('fill', 'white');
+                svgClone.insertBefore(bgRect, svgClone.firstChild);
+
+                // Add title element
+                const titleElement = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                titleElement.textContent = 'ORIED Data Strategy Unit\'s Map';
+                svgClone.insertBefore(titleElement, svgClone.firstChild);
+
+                // Convert to a data URL
+                const svgData = new XMLSerializer().serializeToString(svgClone);
+                const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+                const url = URL.createObjectURL(svgBlob);
+
+                // Create download link
+                const downloadLink = document.createElement('a');
+                downloadLink.href = url;
+                downloadLink.download = 'Graph_Export.svg';
+
+                // Trigger download
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                // Cleanup
+                URL.revokeObjectURL(url);
+
+                // Announce to screen reader
+                announceToScreenReader('Graph exported to SVG successfully');
+
+            } catch (error) {
+                console.error('Error exporting to SVG:', error);
+                showErrorMessage('Error exporting to SVG: ' + error.message);
+            }
+        }
+
+        // Saved Views functionality
+        // Initialize from localStorage or create empty array
+        let savedViews = JSON.parse(localStorage.getItem('savedViews')) || [];
+
+        // Set up event listeners for saved views
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up Save View button
+            const saveViewBtn = document.getElementById('saveViewBtn');
+            if (saveViewBtn) {
+                saveViewBtn.addEventListener('click', function() {
+                    openSaveViewDialog();
+                });
+            }
+
+            // Load saved views from localStorage
+            loadSavedViews();
+        });
+
+        function openSaveViewDialog() {
+            document.getElementById('viewNameInput').value = '';
+
+            // Show Excel file information
+            const fileInfoElement = document.getElementById('excelFileInfo');
+            if (fileInfoElement) {
+                if (currentExcelFileName) {
+                    fileInfoElement.innerHTML = `This view will save with the Excel file:<br><strong>${currentExcelFileName}</strong><br><span style="color: #4CAF50;">The file will be stored with the view so you won't need to reload it.</span>`;
+                } else {
+                    fileInfoElement.innerHTML = '<span style="color: #f44336;">Warning: No Excel file loaded. This view may not restore properly.</span>';
+                }
+            }
+
+            document.getElementById('saveViewDialog').style.display = 'block';
+        }
+
+        function closeSaveViewDialog() {
+            document.getElementById('saveViewDialog').style.display = 'none';
+        }
+
+        function saveCurrentView() {
+            const viewName = document.getElementById('viewNameInput').value.trim();
+
+            if (viewName === '') {
+                showErrorMessage('Please enter a name for this view');
+                return;
+            }
+
+            // Capture current state
+            const viewState = captureCurrentViewState();
+
+            // Add to saved views
+            savedViews.push({
+                name: viewName,
+                state: viewState,
+                timestamp: new Date().toISOString()
+            });
+
+            // Save to localStorage
+            localStorage.setItem('savedViews', JSON.stringify(savedViews));
+
+            // Refresh the list
+            loadSavedViews();
+
+            // Close dialog
+            closeSaveViewDialog();
+
+            // Show confirmation
+            showErrorMessage(`View "${viewName}" saved successfully`);
+        }
+
+        function captureCurrentViewState() {
+            // Capture the current view state including:
+            // 1. Active node
+            // 2. Visible connections
+            // 3. Scale and position of paper
+            // 4. Search term (if any)
+
+            const viewState = {
+                activeNode: activeNode,
+                scale: currentScale,
+                position: {
+                    x: paper.options.origin.x,
+                    y: paper.options.origin.y
+                },
+                searchTerm: document.getElementById('searchInput')?.value || '',
+                visibleLinks: []
+            };
+
+            // Store IDs of visible links
+            links.forEach(link => {
+                if (link.attr('line/opacity') > 0) {
+                    const sourceId = link.getSourceElement()?.id;
+                    const targetId = link.getTargetElement()?.id;
+                    if (sourceId && targetId) {
+                        viewState.visibleLinks.push({
+                            source: sourceId,
+                            target: targetId
+                        });
+                    }
+                }
+            });
+
+            return viewState;
+        }
+
+        function loadSavedViews() {
+            const savedViewsList = document.getElementById('savedViewsList');
+            savedViewsList.innerHTML = '';
+
+            // Create a container for the dropdown and buttons
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '10px';
+
+            // Create the buttons container first (above dropdown)
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.gap = '10px';
+
+            // Create the load button
+            const loadBtn = document.createElement('button');
+            loadBtn.textContent = 'Load View';
+            loadBtn.style.flex = '1';
+            loadBtn.style.padding = '8px 10px';
+            loadBtn.style.backgroundColor = '#1a237e';
+            loadBtn.disabled = savedViews.length === 0;
+            loadBtn.onclick = () => {
+                const select = document.getElementById('savedViewsDropdown');
+                const selectedIndex = select.value;
+                if (selectedIndex !== '') {
+                    loadViewState(savedViews[parseInt(selectedIndex)].state);
+                    select.selectedIndex = 0; // Reset selection
+                }
+            };
+
+            // Create the delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.padding = '8px 10px';
+            deleteBtn.style.backgroundColor = '#e53935';
+            deleteBtn.style.flex = '0.5';
+            deleteBtn.disabled = savedViews.length === 0;
+            deleteBtn.onclick = () => {
+                const select = document.getElementById('savedViewsDropdown');
+                const selectedIndex = select.value;
+                if (selectedIndex !== '') {
+                    deleteSavedView(parseInt(selectedIndex));
+                    select.selectedIndex = 0; // Reset selection
+                } else {
+                    showErrorMessage('Please select a view to delete', true);
+                }
+            };
+
+            // Add buttons to the container
+            buttonsContainer.appendChild(loadBtn);
+            buttonsContainer.appendChild(deleteBtn);
+
+            // Create the dropdown after the buttons
+            const select = document.createElement('select');
+            select.id = 'savedViewsDropdown';
+            select.style.padding = '8px 10px';
+            select.style.borderRadius = '4px';
+            select.style.border = '1px solid #ddd';
+            select.style.backgroundColor = 'white';
+            select.style.width = '100%';
+
+            if (savedViews.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No saved views';
+                option.disabled = true;
+                option.selected = true;
+                select.appendChild(option);
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select a saved view';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                select.appendChild(defaultOption);
+
+                savedViews.forEach((view, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = view.name;
+                    option.title = view.timestamp ? `Saved on ${new Date(view.timestamp).toLocaleString()}` : '';
+                    select.appendChild(option);
+                });
+            }
+
+            // Add change listener to enable/disable buttons
+            select.addEventListener('change', function() {
+                const isViewSelected = this.value !== '';
+                loadBtn.disabled = !isViewSelected;
+                deleteBtn.disabled = !isViewSelected;
+            });
+
+            // Add elements to container in the correct order: buttons first, then dropdown
+            container.appendChild(buttonsContainer);
+            container.appendChild(select);
+
+            // Add container to the saved views list
+            savedViewsList.appendChild(container);
+        }
+
+        function deleteSavedView(index) {
+            if (index >= 0 && index < savedViews.length) {
+                const viewName = savedViews[index].name;
+                savedViews.splice(index, 1);
+                localStorage.setItem('savedViews', JSON.stringify(savedViews));
+                loadSavedViews();
+                showErrorMessage(`View "${viewName}" deleted`);
+            }
+        }
+
+        function loadViewState(viewState) {
+            // Reset current state first
+            resetHighlights();
+
+            // Apply saved scale and position
+            currentScale = viewState.scale || 1;
+            paper.scale(currentScale);
+            if (viewState.position) {
+                paper.translate(viewState.position.x, viewState.position.y);
+            }
+
+            // Apply search term if any
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && viewState.searchTerm) {
+                searchInput.value = viewState.searchTerm;
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+            }
+
+            // If there's an active node, activate it
+            if (viewState.activeNode) {
+                activeNode = viewState.activeNode;
+                const node = nodes[activeNode];
+                if (node) {
+                    resetNodesAppearance();
+                    node.attr('body/strokeWidth', 4);
+                    node.attr('body/stroke', '#FF5722');
+                    showNodeConnections(activeNode);
+                }
+            }
+            // Otherwise, if there are visible links, show them
+            else if (viewState.visibleLinks && viewState.visibleLinks.length > 0) {
+                // Hide all links first
+                links.forEach(link => {
+                    link.attr('line/opacity', 0);
+                });
+
+                // Show only the links that were visible in the saved state
+                viewState.visibleLinks.forEach(linkInfo => {
+                    links.forEach(link => {
+                        const source = link.getSourceElement();
+                        const target = link.getTargetElement();
+
+                        if (source && target &&
+                            source.id === linkInfo.source &&
+                            target.id === linkInfo.target) {
+
+                            link.attr('line/opacity', 1);
+                            link.attr('line/strokeWidth', 4);
+
+                            // Use source node's color
+                            const sourceColor = source.attr('body/fill');
+                            link.attr('line/stroke', sourceColor);
+                        }
+                    });
+                });
+            }
+
+            // Auto-resize the graph container if needed
+            autoResizeGraph();
+        }
+
+        // Add keyboard shortcuts for zoom functions
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + Plus for zoom in
+            if ((e.ctrlKey || e.metaKey) && e.key === '+') {
+                e.preventDefault();
+                zoomIn();
+            }
+
+            // Ctrl/Cmd + Minus for zoom out
+            if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                e.preventDefault();
+                zoomOut();
+            }
+
+            // Ctrl/Cmd + 0 for reset view
+            if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                e.preventDefault();
+                resetView();
+            }
+        });
+
+        // Additional event listener to reset file label color when a new file is selected
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('excelFileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', function() {
+                    const fileLabel = document.getElementById('excelFileLabel');
+                    if (fileLabel) {
+                        fileLabel.style.color = ''; // Reset to default color
+                    }
+                });
+            }
+        });
+
+        // Initialize savedViews on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Try to load saved views from localStorage
+            const savedViewsData = localStorage.getItem('savedViews');
+            if (savedViewsData) {
+                try {
+                    savedViews = JSON.parse(savedViewsData);
+                } catch (e) {
+                    console.error('Error parsing saved views data:', e);
+                    savedViews = [];
+                }
+            } else {
+                savedViews = [];
+            }
+
+            // Load the saved views
+            loadSavedViews();
+        });
+
+        function loadSavedViews() {
+            // No need to re-initialize savedViews here
+            const savedViewsList = document.getElementById('savedViewsList');
+            savedViewsList.innerHTML = '';
+
+            // Create a container for the dropdown and buttons
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '10px';
+
+            // Create the buttons container first (above dropdown)
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.gap = '10px';
+
+            // Create the load button
+            const loadBtn = document.createElement('button');
+            loadBtn.textContent = 'Load View';
+            loadBtn.style.flex = '1';
+            loadBtn.style.padding = '8px 10px';
+            loadBtn.style.backgroundColor = '#1a237e';
+            loadBtn.disabled = savedViews.length === 0;
+            loadBtn.onclick = () => {
+                const select = document.getElementById('savedViewsDropdown');
+                const selectedIndex = select.value;
+                if (selectedIndex !== '') {
+                    loadViewState(savedViews[parseInt(selectedIndex)].state);
+                    select.selectedIndex = 0; // Reset selection
+                }
+            };
+
+            // Create the delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.padding = '8px 10px';
+            deleteBtn.style.backgroundColor = '#e53935';
+            deleteBtn.style.flex = '0.5';
+            deleteBtn.disabled = savedViews.length === 0;
+            deleteBtn.onclick = () => {
+                const select = document.getElementById('savedViewsDropdown');
+                const selectedIndex = select.value;
+                if (selectedIndex !== '') {
+                    deleteSavedView(parseInt(selectedIndex));
+                    select.selectedIndex = 0; // Reset selection
+                } else {
+                    showErrorMessage('Please select a view to delete', true);
+                }
+            };
+
+            // Add buttons to the container
+            buttonsContainer.appendChild(loadBtn);
+            buttonsContainer.appendChild(deleteBtn);
+
+            // Create the dropdown after the buttons
+            const select = document.createElement('select');
+            select.id = 'savedViewsDropdown';
+            select.style.padding = '8px 10px';
+            select.style.borderRadius = '4px';
+            select.style.border = '1px solid #ddd';
+            select.style.backgroundColor = 'white';
+            select.style.width = '100%';
+
+            if (savedViews.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No saved views';
+                option.disabled = true;
+                option.selected = true;
+                select.appendChild(option);
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select a saved view';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                select.appendChild(defaultOption);
+
+                savedViews.forEach((view, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = view.name;
+                    option.title = view.timestamp ? `Saved on ${new Date(view.timestamp).toLocaleString()}` : '';
+                    select.appendChild(option);
+                });
+            }
+
+            // Add change listener to enable/disable buttons
+            select.addEventListener('change', function() {
+                const isViewSelected = this.value !== '';
+                loadBtn.disabled = !isViewSelected;
+                deleteBtn.disabled = !isViewSelected;
+            });
+
+            // Add elements to container in the correct order: buttons first, then dropdown
+            container.appendChild(buttonsContainer);
+            container.appendChild(select);
+
+            // Add container to the saved views list
+            savedViewsList.appendChild(container);
+        }
+
+        function deleteSavedView(index) {
+            const viewName = savedViews[index].name;
+            savedViews.splice(index, 1);
+
+            // Save to localStorage with correct key
+            localStorage.setItem('savedViews', JSON.stringify(savedViews));
+
+            // Update the views list
+            loadSavedViews();
+
+            showErrorMessage(`Deleted view "${viewName}"`, false);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Graph Creator</title>
+
+    <!-- JointJS dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.0/backbone-min.js"></script>
+
+    <!-- JointJS core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.6.5/joint.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/3.6.5/joint.min.css">
+
+    <!-- XLSX library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        .sidebar {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        .graph-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        #graph {
+            width: 100%;
+            height: 100%;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #1a237e;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #283593;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #1a237e;
+        }
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .color-picker input[type="color"] {
+            width: 50px;
+            height: 30px;
+            padding: 0;
+        }
+        .node-buttons {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .node-buttons button {
+            flex: 1;
+        }
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .toolbar button {
+            width: auto;
+            margin: 0;
+        }
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .status-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .status-message.visible {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .error-banner {
+            background-color: #f44336;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-banner" id="errorBanner"></div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="section">
+                <h3>Add New Node</h3>
+                <div class="form-group">
+                    <label for="nodeLabel">Node Label:</label>
+                    <input type="text" id="nodeLabel" placeholder="Enter node label" oninput="updateNodePreview()">
+                </div>
+                <div class="form-group">
+                    <label for="nodeTooltip">Notes/Tooltip:</label>
+                    <input type="text" id="nodeTooltip" placeholder="Enter important notes" oninput="updateNodePreview()">
+                </div>
+                <div class="form-group">
+                    <label for="nodeWidth">Width:</label>
+                    <input type="number" id="nodeWidth" value="150" min="100" max="500" oninput="updateNodePreview()">
+                </div>
+                <div class="form-group">
+                    <label for="nodeHeight">Height:</label>
+                    <input type="number" id="nodeHeight" value="60" min="30" max="200" oninput="updateNodePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Node Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="nodeColor" value="#1a237e" oninput="updateNodePreview(); syncColorHex('nodeColor', 'nodeColorHex')">
+                        <input type="text" id="nodeColorHex" value="#1a237e" oninput="syncColorInput('nodeColorHex', 'nodeColor'); updateNodePreview()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Node Preview:</label>
+                    <div id="nodePreview" style="width: 100%; height: 100px; border: 1px solid #ddd; margin-top: 5px; border-radius: 4px; position: relative; overflow: hidden;"></div>
+                </div>
+                <div class="node-buttons">
+                    <button id="addNodeBtn" onclick="addNode()">Add Node</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Edit Selected Node</h3>
+                <div class="form-group">
+                    <label for="editNodeLabel">Node Label:</label>
+                    <input type="text" id="editNodeLabel" placeholder="Edit node label" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="editNodeTooltip">Notes/Tooltip:</label>
+                    <input type="text" id="editNodeTooltip" placeholder="Edit important notes" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="editNodeWidth">Width:</label>
+                    <input type="number" id="editNodeWidth" value="150" min="100" max="500" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="editNodeHeight">Height:</label>
+                    <input type="number" id="editNodeHeight" value="60" min="30" max="200" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Node Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="editNodeColor" value="#1a237e" disabled>
+                        <input type="text" id="editNodeColorHex" value="#1a237e" disabled>
+                    </div>
+                </div>
+                <div class="node-buttons">
+                    <button id="updateNodeBtn" onclick="updateNode()" disabled>Update Node</button>
+                    <button id="deleteNodeBtn" onclick="deleteNode()" disabled>Delete Node</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Add Text Label</h3>
+                <div class="form-group">
+                    <label for="labelText">Label Text:</label>
+                    <input type="text" id="labelText" placeholder="Enter label text">
+                </div>
+                <div class="form-group">
+                    <label for="labelFontSize">Font Size:</label>
+                    <input type="number" id="labelFontSize" value="14" min="10" max="32">
+                </div>
+                <div class="form-group">
+                    <label for="labelStyle">Label Style:</label>
+                    <select id="labelStyle">
+                        <option value="rectangle">Rectangle</option>
+                        <option value="circle">Circle</option>
+                        <option value="ellipse">Ellipse</option>
+                        <option value="cloud">Cloud</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Label Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="labelColor" value="#4CAF50">
+                        <input type="text" id="labelColorHex" value="#4CAF50">
+                    </div>
+                </div>
+                <button id="addLabelBtn" onclick="addLabel()">Add Label</button>
+            </div>
+
+            <div class="section">
+                <h3>Create Link</h3>
+                <div class="form-group">
+                    <label for="sourceNode">Source Node:</label>
+                    <select id="sourceNode">
+                        <option value="">No nodes available</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="targetNode">Target Node:</label>
+                    <select id="targetNode">
+                        <option value="">No nodes available</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="linkLabel">Link Label:</label>
+                    <input type="text" id="linkLabel" placeholder="Enter link label (optional)">
+                </div>
+                <div class="form-group">
+                    <label>Link Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="linkColor" value="#1a237e">
+                        <input type="text" id="linkColorHex" value="#1a237e">
+                    </div>
+                </div>
+                <button id="createLinkBtn" onclick="createLink()">Create Link</button>
+            </div>
+
+            <div class="section">
+                <h3>Export</h3>
+                <button onclick="exportToExcel()">Export to Excel</button>
+            </div>
+
+            <div class="section">
+                <h3>Saved Views</h3>
+                <div id="savedViewsList"></div>
+                <button onclick="openSaveViewDialog()">Save Current View</button>
+            </div>
+        </div>
+
+        <div class="graph-container">
+            <div id="graph"></div>
+            <div class="toolbar">
+                <button onclick="zoomIn()">Zoom In</button>
+                <button onclick="zoomOut()">Zoom Out</button>
+                <button onclick="resetView()">Reset View</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <!-- Save View Dialog -->
+    <div id="saveViewDialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.3); z-index: 1100; width: 300px;">
+        <h3 style="margin-top: 0; color: #1a237e;">Save Current View</h3>
+        <div class="form-group">
+            <label for="viewName">View Name:</label>
+            <input type="text" id="viewName" placeholder="Enter a name for this view">
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <button onclick="closeSaveViewDialog()" style="width: 45%; background-color: #9e9e9e;">Cancel</button>
+            <button onclick="saveCurrentView()" style="width: 45%;">Save View</button>
+        </div>
+    </div>
+
+    <script>
+        // Check if library dependencies are loaded
+        window.addEventListener('load', function() {
+            if (typeof joint === 'undefined') {
+                document.getElementById('errorBanner').style.display = 'block';
+                document.getElementById('errorBanner').textContent =
+                    'Error: JointJS library not loaded. Please check your internet connection and refresh the page.';
+
+                // Disable all buttons
+                document.querySelectorAll('button').forEach(btn => {
+                    btn.disabled = true;
+                });
+            } else {
+                // Initialize the node preview
+                initNodePreview();
+            }
+        });
+    </script>
+    <script src="js/graph.js"></script>
+    <script>
+        // Global variables
+        let graph;
+        let paper;
+        let currentScale = 1;
+        let selectedNode = null;
+        const nodePreviewGraph = new joint.dia.Graph();
+        let nodePreviewPaper;
+        let savedViews = []; // Array to store saved views
+
+        // Auto-resize graph container when elements go beyond boundaries
+        function autoResizeGraph() {
+            const graphContainer = document.querySelector('.graph-container');
+            if (!graphContainer || !graph) return;
+            
+            const graphBBox = graph.getBBox();
+            
+            // If graph is empty, no need to resize
+            if (!graphBBox.width || !graphBBox.height) return;
+            
+            // Get the current container size
+            const containerWidth = graphContainer.clientWidth;
+            const containerHeight = graphContainer.clientHeight;
+            
+            // Calculate needed size with some padding
+            const neededWidth = graphBBox.width + 200; // 100px padding on each side
+            const neededHeight = graphBBox.height + 200; // 100px padding on each side
+            
+            // Only resize if needed
+            if (neededWidth > containerWidth) {
+                graphContainer.style.width = neededWidth + 'px';
+            }
+            
+            if (neededHeight > containerHeight) {
+                graphContainer.style.height = neededHeight + 'px';
+            }
+        }
+
+        // Initialize the graph
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize main graph
+            graph = new joint.dia.Graph();
+            paper = new joint.dia.Paper({
+                el: document.getElementById('graph'),
+                model: graph,
+                width: '100%',
+                height: '100%',
+                gridSize: 10,
+                drawGrid: true,
+                background: {
+                    color: '#f8f9fa'
+                },
+                interactive: true
+            });
+
+            // Monitor changes to graph that might require resizing
+            graph.on('add change:position change:size', _.debounce(autoResizeGraph, 300));
+
+            // Initialize node color hex synchronization
+            document.getElementById('nodeColor').addEventListener('input', function() {
+                syncColorHex('nodeColor', 'nodeColorHex');
+            });
+
+            document.getElementById('nodeColorHex').addEventListener('input', function() {
+                syncColorInput('nodeColorHex', 'nodeColor');
+            });
+
+            document.getElementById('linkColor').addEventListener('input', function() {
+                syncColorHex('linkColor', 'linkColorHex');
+            });
+
+            document.getElementById('linkColorHex').addEventListener('input', function() {
+                syncColorInput('linkColorHex', 'linkColor');
+            });
+
+            // Handle node selection
+            paper.on('element:pointerclick', function(elementView) {
+                selectNode(elementView.model);
+            });
+
+            // Handle click on blank paper to deselect
+            paper.on('blank:pointerclick', function() {
+                deselectNode();
+            });
+
+            // Initialize preview
+            initNodePreview();
+
+            // Update node dropdowns
+            updateNodeDropdowns();
+
+            // Initialize saved views
+            loadSavedViews();
+        });
+
+        // Initialize node preview
+        function initNodePreview() {
+            const previewEl = document.getElementById('nodePreview');
+            if (!previewEl) return;
+
+            // Clear existing content
+            previewEl.innerHTML = '';
+
+            nodePreviewPaper = new joint.dia.Paper({
+                el: previewEl,
+                model: nodePreviewGraph,
+                width: '100%',
+                height: '100%',
+                interactive: false
+            });
+
+            updateNodePreview();
+        }
+
+        // Update node preview as user types
+        function updateNodePreview() {
+            const label = document.getElementById('nodeLabel').value || 'Node Label';
+            const width = parseInt(document.getElementById('nodeWidth').value) || 150;
+            const height = parseInt(document.getElementById('nodeHeight').value) || 60;
+            const color = document.getElementById('nodeColor').value || '#1a237e';
+
+            // Clear the preview graph
+            nodePreviewGraph.clear();
+
+            // Create a preview node
+            const previewNode = new joint.shapes.standard.Rectangle({
+                position: { x: 10, y: 10 },
+                size: { width: width > 250 ? 250 : width, height: height > 80 ? 80 : height },
+                attrs: {
+                    body: {
+                        fill: color,
+                        stroke: color,
+                        rx: 4,
+                        ry: 4
+                    },
+                    label: {
+                        text: label,
+                        fill: 'white',
+                        fontSize: 12,
+                        fontWeight: 'bold'
+                    }
+                }
+            });
+
+            nodePreviewGraph.addCell(previewNode);
+
+            // Fit the node to the preview area
+            nodePreviewPaper.scaleContentToFit({ padding: 10 });
+        }
+
+        // Synchronize color input and hex input
+        function syncColorHex(colorInputId, hexInputId) {
+            const colorInput = document.getElementById(colorInputId);
+            const hexInput = document.getElementById(hexInputId);
+            hexInput.value = colorInput.value;
+        }
+
+        function syncColorInput(hexInputId, colorInputId) {
+            const hexInput = document.getElementById(hexInputId);
+            const colorInput = document.getElementById(colorInputId);
+
+            // Validate hex value
+            if (/^#[0-9A-F]{6}$/i.test(hexInput.value)) {
+                colorInput.value = hexInput.value;
+            }
+        }
+
+        // Add a new node to the graph
+        function addNode() {
+            const label = document.getElementById('nodeLabel').value;
+            if (!label) {
+                showStatusMessage('Please enter a node label', 'error');
+                return;
+            }
+
+            const tooltip = document.getElementById('nodeTooltip').value;
+            const width = parseInt(document.getElementById('nodeWidth').value);
+            const height = parseInt(document.getElementById('nodeHeight').value);
+            const color = document.getElementById('nodeColor').value;
+
+            // Create a new node
+            const node = new joint.shapes.standard.Rectangle({
+                position: { x: 50 + Math.random() * 400, y: 50 + Math.random() * 300 },
+                size: { width, height },
+                attrs: {
+                    body: {
+                        fill: color,
+                        stroke: color,
+                        rx: 4,
+                        ry: 4
+                    },
+                    label: {
+                        text: label,
+                        fill: 'white',
+                        fontSize: 14,
+                        fontWeight: 'bold'
+                    }
+                }
+            });
+
+            // Add tooltip as a custom property
+            node.prop('tooltip', tooltip);
+
+            // Add the node to the graph
+            graph.addCell(node);
+
+            // Update the node dropdowns
+            updateNodeDropdowns();
+
+            // Auto-resize the graph container if needed
+            autoResizeGraph();
+
+            // Show success message
+            showStatusMessage('Node added successfully');
+
+            // Clear the form
+            document.getElementById('nodeLabel').value = '';
+            document.getElementById('nodeTooltip').value = '';
+            updateNodePreview();
+        }
+
+        // Select a node for editing
+        function selectNode(node) {
+            // Deselect previous node if any
+            if (selectedNode) {
+                selectedNode.attr('body/stroke', selectedNode.attr('body/fill'));
+                selectedNode.attr('body/strokeWidth', 1);
+            }
+
+            // Select new node
+            selectedNode = node;
+            selectedNode.attr('body/stroke', '#FF5722');
+            selectedNode.attr('body/strokeWidth', 3);
+
+            // Update edit form
+            document.getElementById('editNodeLabel').value = node.attr('label/text');
+            document.getElementById('editNodeTooltip').value = node.prop('tooltip') || '';
+            document.getElementById('editNodeWidth').value = node.get('size').width;
+            document.getElementById('editNodeHeight').value = node.get('size').height;
+            document.getElementById('editNodeColor').value = node.attr('body/fill');
+            document.getElementById('editNodeColorHex').value = node.attr('body/fill');
+
+            // Enable edit form
+            document.getElementById('editNodeLabel').disabled = false;
+            document.getElementById('editNodeTooltip').disabled = false;
+            document.getElementById('editNodeWidth').disabled = false;
+            document.getElementById('editNodeHeight').disabled = false;
+            document.getElementById('editNodeColor').disabled = false;
+            document.getElementById('editNodeColorHex').disabled = false;
+            document.getElementById('updateNodeBtn').disabled = false;
+            document.getElementById('deleteNodeBtn').disabled = false;
+
+            // Sync color inputs
+            document.getElementById('editNodeColor').addEventListener('input', function() {
+                syncColorHex('editNodeColor', 'editNodeColorHex');
+            });
+
+            document.getElementById('editNodeColorHex').addEventListener('input', function() {
+                syncColorInput('editNodeColorHex', 'editNodeColor');
+            });
+        }
+
+        // Deselect the currently selected node
+        function deselectNode() {
+            if (selectedNode) {
+                selectedNode.attr('body/stroke', selectedNode.attr('body/fill'));
+                selectedNode.attr('body/strokeWidth', 1);
+                selectedNode = null;
+
+                // Disable edit form
+                document.getElementById('editNodeLabel').value = '';
+                document.getElementById('editNodeTooltip').value = '';
+                document.getElementById('editNodeWidth').value = 150;
+                document.getElementById('editNodeHeight').value = 60;
+                document.getElementById('editNodeColor').value = '#1a237e';
+                document.getElementById('editNodeColorHex').value = '#1a237e';
+
+                document.getElementById('editNodeLabel').disabled = true;
+                document.getElementById('editNodeTooltip').disabled = true;
+                document.getElementById('editNodeWidth').disabled = true;
+                document.getElementById('editNodeHeight').disabled = true;
+                document.getElementById('editNodeColor').disabled = true;
+                document.getElementById('editNodeColorHex').disabled = true;
+                document.getElementById('updateNodeBtn').disabled = true;
+                document.getElementById('deleteNodeBtn').disabled = true;
+            }
+        }
+
+        // Update the selected node
+        function updateNode() {
+            if (!selectedNode) {
+                showStatusMessage('No node selected', 'error');
+                return;
+            }
+
+            const label = document.getElementById('editNodeLabel').value;
+            if (!label) {
+                showStatusMessage('Please enter a node label', 'error');
+                return;
+            }
+
+            const tooltip = document.getElementById('editNodeTooltip').value;
+            const width = parseInt(document.getElementById('editNodeWidth').value);
+            const height = parseInt(document.getElementById('editNodeHeight').value);
+            const color = document.getElementById('editNodeColor').value;
+
+            // Update the node
+            selectedNode.attr('label/text', label);
+            selectedNode.prop('tooltip', tooltip);
+            selectedNode.resize(width, height);
+            selectedNode.attr('body/fill', color);
+            selectedNode.attr('body/stroke', color);
+
+            // Reset selection highlight
+            selectedNode.attr('body/stroke', '#FF5722');
+            selectedNode.attr('body/strokeWidth', 3);
+
+            // Update node dropdowns
+            updateNodeDropdowns();
+
+            // Show success message
+            showStatusMessage('Node updated successfully');
+        }
+
+        // Delete the selected node
+        function deleteNode() {
+            if (!selectedNode) {
+                showStatusMessage('No node selected', 'error');
+                return;
+            }
+
+            // Check if the node is connected to any links
+            const connectedLinks = graph.getConnectedLinks(selectedNode);
+            if (connectedLinks.length > 0) {
+                // Remove connected links first
+                connectedLinks.forEach(link => link.remove());
+            }
+
+            // Remove the node
+            selectedNode.remove();
+            selectedNode = null;
+
+            // Reset the edit form
+            deselectNode();
+
+            // Update node dropdowns
+            updateNodeDropdowns();
+
+            // Show success message
+            showStatusMessage('Node deleted successfully');
+        }
+
+        // Create a link between nodes
+        function createLink() {
+            const sourceId = document.getElementById('sourceNode').value;
+            const targetId = document.getElementById('targetNode').value;
+            const linkLabel = document.getElementById('linkLabel').value;
+            const linkColor = document.getElementById('linkColor').value;
+
+            if (!sourceId || !targetId) {
+                showStatusMessage('Please select source and target nodes', 'error');
+                return;
+            }
+
+            if (sourceId === targetId) {
+                showStatusMessage('Source and target nodes must be different', 'error');
+                return;
+            }
+
+            // Find source and target elements
+            const sourceElement = graph.getCell(sourceId);
+            const targetElement = graph.getCell(targetId);
+
+            if (!sourceElement || !targetElement) {
+                showStatusMessage('Selected nodes not found', 'error');
+                return;
+            }
+
+            // Create link
+            const link = new joint.shapes.standard.Link({
+                source: { id: sourceId },
+                target: { id: targetId },
+                attrs: {
+                    line: {
+                        stroke: linkColor,
+                        strokeWidth: 2,
+                        targetMarker: {
+                            type: 'path',
+                            d: 'M 10 -5 0 0 10 5 z',
+                            fill: linkColor
+                        }
+                    }
+                },
+                labels: linkLabel ? [
+                    {
+                        position: 0.5,
+                        attrs: {
+                            text: {
+                                text: linkLabel,
+                                fill: '#333',
+                                fontSize: 12,
+                                fontWeight: 'bold',
+                                textAnchor: 'middle',
+                                textVerticalAnchor: 'middle',
+                                pointerEvents: 'none'
+                            },
+                            rect: {
+                                fill: 'white',
+                                stroke: '#ccc',
+                                strokeWidth: 1,
+                                rx: 3,
+                                ry: 3
+                            }
+                        }
+                    }
+                ] : []
+            });
+
+            // Add the link to the graph
+            graph.addCell(link);
+            
+            // Auto-resize the graph container if needed
+            autoResizeGraph();
+
+            // Show success message
+            showStatusMessage('Link created successfully');
+        }
+
+        // Update node dropdowns
+        function updateNodeDropdowns() {
+            const sourceSelect = document.getElementById('sourceNode');
+            const targetSelect = document.getElementById('targetNode');
+
+            // Clear existing options
+            sourceSelect.innerHTML = '<option value="">Select source node</option>';
+            targetSelect.innerHTML = '<option value="">Select target node</option>';
+
+            // Get all elements
+            const elements = graph.getElements();
+
+            // Add options for each element
+            elements.forEach(element => {
+                const label = element.attr('label/text');
+                const id = element.id;
+
+                const sourceOption = document.createElement('option');
+                sourceOption.value = id;
+                sourceOption.textContent = label;
+                sourceSelect.appendChild(sourceOption);
+
+                const targetOption = document.createElement('option');
+                targetOption.value = id;
+                targetOption.textContent = label;
+                targetSelect.appendChild(targetOption);
+            });
+        }
+
+        // Export the graph to Excel
+        function exportToExcel() {
+            const elements = graph.getElements();
+            const links = graph.getLinks();
+
+            if (elements.length === 0) {
+                showStatusMessage('No nodes to export', 'error');
+                return;
+            }
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+
+            // Create nodes sheet data
+            const nodesData = [
+                ['ID', 'Label', 'Tooltip', 'Width', 'Height', 'Color', 'X', 'Y']
+            ];
+
+            elements.forEach(element => {
+                nodesData.push([
+                    element.id,
+                    element.attr('label/text'),
+                    element.prop('tooltip') || '',
+                    element.get('size').width,
+                    element.get('size').height,
+                    element.attr('body/fill'),
+                    element.get('position').x,
+                    element.get('position').y
+                ]);
+            });
+
+            // Create links sheet data
+            const linksData = [
+                ['Source ID', 'Target ID', 'Color', 'Label']
+            ];
+
+            links.forEach(link => {
+                const labels = link.labels || [];
+                let labelText = '';
+
+                // Add null check before accessing attrs property
+                if (labels.length > 0 && labels[0] && labels[0].attrs && labels[0].attrs.text) {
+                    labelText = labels[0].attrs.text.text || '';
+                }
+
+                // Get the source and target IDs safely
+                const sourceObj = link.get('source');
+                const targetObj = link.get('target');
+
+                // Only add links with valid source and target
+                if (sourceObj && targetObj && sourceObj.id && targetObj.id) {
+                    linksData.push([
+                        sourceObj.id,
+                        targetObj.id,
+                        link.attr('line/stroke'),
+                        labelText
+                    ]);
+                }
+            });
+
+            // Create worksheets
+            const nodesWs = XLSX.utils.aoa_to_sheet(nodesData);
+            const linksWs = XLSX.utils.aoa_to_sheet(linksData);
+
+            // Add worksheets to workbook
+            XLSX.utils.book_append_sheet(wb, nodesWs, 'Nodes');
+            XLSX.utils.book_append_sheet(wb, linksWs, 'Links');
+
+            // Generate Excel file and trigger download
+            XLSX.writeFile(wb, 'Graph_Export.xlsx');
+
+            // Show success message
+            showStatusMessage('Graph exported to Excel successfully');
+        }
+
+        // Show status message
+        function showStatusMessage(message, type = 'success') {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336';
+            statusMessage.classList.add('visible');
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                statusMessage.classList.remove('visible');
+            }, 3000);
+        }
+
+        // Zoom functions
+        function zoomIn() {
+            currentScale += 0.1;
+            if (currentScale > 2) currentScale = 2;
+            paper.scale(currentScale);
+        }
+
+        function zoomOut() {
+            currentScale -= 0.1;
+            if (currentScale < 0.5) currentScale = 0.5;
+            paper.scale(currentScale);
+        }
+
+        function resetView() {
+            currentScale = 1;
+            paper.scale(1);
+            paper.translate(0, 0);
+        }
+
+        // Save View States functionality
+        function openSaveViewDialog() {
+            document.getElementById('saveViewDialog').style.display = 'block';
+            document.getElementById('viewName').focus();
+        }
+
+        function closeSaveViewDialog() {
+            document.getElementById('saveViewDialog').style.display = 'none';
+            document.getElementById('viewName').value = '';
+        }
+
+        function saveCurrentView() {
+            const viewName = document.getElementById('viewName').value.trim();
+
+            if (!viewName) {
+                showStatusMessage('Please enter a view name', 'error');
+                return;
+            }
+
+            // Get the current state
+            const viewState = captureCurrentViewState();
+
+            // Check if a view with this name already exists
+            const existingViewIndex = savedViews.findIndex(view => view.name === viewName);
+            if (existingViewIndex !== -1) {
+                // Update existing view
+                savedViews[existingViewIndex] = { name: viewName, state: viewState };
+                showStatusMessage(`Updated view "${viewName}"`);
+            } else {
+                // Add new view
+                savedViews.push({ name: viewName, state: viewState });
+                showStatusMessage(`Saved view "${viewName}"`);
+            }
+
+            // Save to localStorage
+            localStorage.setItem('graphCreatorSavedViews', JSON.stringify(savedViews));
+
+            // Update the views list
+            loadSavedViews();
+
+            // Close the dialog
+            closeSaveViewDialog();
+        }
+
+        function captureCurrentViewState() {
+            // Capture nodes and their properties
+            const nodes = {};
+            graph.getElements().forEach(element => {
+                // Check if this is a regular node or a label
+                const type = element.prop('type') || 'node';
+
+                if (type === 'label') {
+                    // It's a text label
+                    nodes[element.id] = {
+                        type: 'label',
+                        position: element.position(),
+                        size: element.size(),
+                        attrs: {
+                            label: element.attr('text/text') || '',
+                            fill: element.attr('body/fill') || '#4CAF50',
+                            fontSize: parseInt(element.attr('text/fontSize') || '14')
+                        },
+                        labelStyle: element.prop('labelStyle') || 'rectangle'
+                    };
+                } else {
+                    // It's a regular node
+                    nodes[element.id] = {
+                        type: 'node',
+                        position: element.position(),
+                        size: element.size(),
+                        attrs: {
+                            label: element.attr('label/text') || '',
+                            fill: element.attr('body/fill') || '#1a237e'
+                        },
+                        tooltip: element.prop('tooltip') || ''
+                    };
+                }
+            });
+
+            // Capture links
+            const links = [];
+            graph.getLinks().forEach(link => {
+                const labels = link.labels || [];
+                let labelText = '';
+
+                // Add null check before accessing attrs property
+                if (labels.length > 0 && labels[0] && labels[0].attrs && labels[0].attrs.text) {
+                    labelText = labels[0].attrs.text.text || '';
+                }
+
+                // Get the source and target IDs safely
+                const sourceObj = link.get('source');
+                const targetObj = link.get('target');
+
+                // Only add links with valid source and target
+                if (sourceObj && targetObj && sourceObj.id && targetObj.id) {
+                    links.push({
+                        sourceId: sourceObj.id,
+                        targetId: targetObj.id,
+                        color: link.attr('line/stroke') || '#1a237e',
+                        label: labelText
+                    });
+                }
+            });
+
+            return {
+                scale: currentScale,
+                position: paper.translate(),
+                selectedNodeId: selectedNode ? selectedNode.id : null,
+                nodes: nodes,
+                links: links,
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        function loadSavedViews() {
+            // Try to load saved views from localStorage
+            const savedViewsData = localStorage.getItem('graphCreatorSavedViews');
+            if (savedViewsData) {
+                savedViews = JSON.parse(savedViewsData);
+            }
+
+            // Populate the saved views list as a dropdown
+            const savedViewsList = document.getElementById('savedViewsList');
+            savedViewsList.innerHTML = '';
+
+            // Create a container for the dropdown and buttons
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '10px';
+
+            // Create the buttons container first (above dropdown)
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.gap = '10px';
+
+            // Create the load button
+            const loadBtn = document.createElement('button');
+            loadBtn.textContent = 'Load';
+            loadBtn.style.flex = '1';
+            loadBtn.style.padding = '8px 12px';
+            loadBtn.disabled = savedViews.length === 0;
+            loadBtn.onclick = () => {
+                const select = document.getElementById('savedViewsDropdown');
+                const selectedIndex = select.value;
+                if (selectedIndex !== '') {
+                    loadViewState(parseInt(selectedIndex));
+                    select.selectedIndex = 0; // Reset selection
+                }
+            };
+
+            // Create the delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style.width = 'auto';
+            deleteBtn.style.padding = '8px 12px';
+            deleteBtn.style.backgroundColor = '#f44336';
+            deleteBtn.style.flex = '0.5';
+            deleteBtn.disabled = savedViews.length === 0;
+            deleteBtn.onclick = () => {
+                const select = document.getElementById('savedViewsDropdown');
+                const selectedIndex = select.value;
+                if (selectedIndex !== '') {
+                    deleteSavedView(parseInt(selectedIndex));
+                    select.selectedIndex = 0; // Reset selection
+                } else {
+                    showStatusMessage('Please select a view to delete', 'error');
+                }
+            };
+
+            // Add buttons to container
+            buttonsContainer.appendChild(loadBtn);
+            buttonsContainer.appendChild(deleteBtn);
+
+            // Now create the dropdown
+            const select = document.createElement('select');
+            select.id = 'savedViewsDropdown';
+            select.style.padding = '8px';
+            select.style.borderRadius = '4px';
+            select.style.border = '1px solid #ddd';
+            select.style.width = '100%';
+
+            if (savedViews.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No saved views';
+                option.disabled = true;
+                option.selected = true;
+                select.appendChild(option);
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select a saved view';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                select.appendChild(defaultOption);
+
+                savedViews.forEach((view, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = view.name;
+                    option.title = `Saved on ${new Date(view.state.timestamp).toLocaleString()}`;
+                    select.appendChild(option);
+                });
+            }
+
+            // Add change listener to enable/disable buttons
+            select.addEventListener('change', function() {
+                const isViewSelected = this.value !== '';
+                loadBtn.disabled = !isViewSelected;
+                deleteBtn.disabled = !isViewSelected;
+            });
+
+            // Add elements to container in order: buttons first, then dropdown
+            container.appendChild(buttonsContainer);
+            container.appendChild(select);
+
+            // Add container to the list
+            savedViewsList.appendChild(container);
+        }
+
+        function deleteSavedView(index) {
+            const viewName = savedViews[index].name;
+            savedViews.splice(index, 1);
+
+            // Save to localStorage
+            localStorage.setItem('graphCreatorSavedViews', JSON.stringify(savedViews));
+
+            // Update the views list
+            loadSavedViews();
+
+            showStatusMessage(`Deleted view "${viewName}"`);
+        }
+
+        function loadViewState(index) {
+            const view = savedViews[index];
+            if (!view) return;
+            
+            // Clear existing graph if we're loading a complete view state
+            if (view.state.nodes && Object.keys(view.state.nodes).length > 0) {
+                // Ask for confirmation if the current graph has elements
+                if (graph.getElements().length > 0) {
+                    if (!confirm("Loading this view will replace your current graph. Continue?")) {
+                        return;
+                    }
+                    graph.clear();
+                }
+                
+                // Recreate nodes and labels
+                const nodeMap = {};
+                Object.entries(view.state.nodes).forEach(([id, nodeData]) => {
+                    let element;
+                    
+                    if (nodeData.type === 'label') {
+                        // Recreate a label
+                        let commonAttrs = {
+                            text: {
+                                text: nodeData.attrs.label,
+                                fill: 'white',
+                                fontSize: nodeData.attrs.fontSize || 14,
+                                fontWeight: 'bold',
+                                textAnchor: 'middle',
+                                textVerticalAnchor: 'middle'
+                            }
+                        };
+                        
+                        switch (nodeData.labelStyle) {
+                            case 'rectangle':
+                                element = new joint.shapes.standard.Rectangle({
+                                    id: id,
+                                    position: nodeData.position,
+                                    size: nodeData.size,
+                                    attrs: {
+                                        body: {
+                                            fill: nodeData.attrs.fill,
+                                            stroke: nodeData.attrs.fill,
+                                            rx: 4,
+                                            ry: 4
+                                        },
+                                        ...commonAttrs
+                                    }
+                                });
+                                break;
+                            case 'circle':
+                                element = new joint.shapes.standard.Circle({
+                                    id: id,
+                                    position: nodeData.position,
+                                    size: nodeData.size,
+                                    attrs: {
+                                        body: {
+                                            fill: nodeData.attrs.fill,
+                                            stroke: nodeData.attrs.fill
+                                        },
+                                        ...commonAttrs
+                                    }
+                                });
+                                break;
+                            case 'ellipse':
+                                element = new joint.shapes.standard.Ellipse({
+                                    id: id,
+                                    position: nodeData.position,
+                                    size: nodeData.size,
+                                    attrs: {
+                                        body: {
+                                            fill: nodeData.attrs.fill,
+                                            stroke: nodeData.attrs.fill
+                                        },
+                                        ...commonAttrs
+                                    }
+                                });
+                                break;
+                            case 'cloud':
+                                element = new joint.shapes.standard.Polygon({
+                                    id: id,
+                                    position: nodeData.position,
+                                    size: nodeData.size,
+                                    attrs: {
+                                        body: {
+                                            fill: nodeData.attrs.fill,
+                                            stroke: nodeData.attrs.fill,
+                                            refPoints: '10,0 20,0 30,5 40,0 50,5 60,0 70,5 80,10 80,20 75,30 85,40 75,50 65,55 50,60 35,55 25,50 15,45 5,35 0,25 5,15 10,10'
+                                        },
+                                        ...commonAttrs
+                                    }
+                                });
+                                break;
+                            default:
+                                // Default to rectangle if style not recognized
+                                element = new joint.shapes.standard.Rectangle({
+                                    id: id,
+                                    position: nodeData.position,
+                                    size: nodeData.size,
+                                    attrs: {
+                                        body: {
+                                            fill: nodeData.attrs.fill,
+                                            stroke: nodeData.attrs.fill,
+                                            rx: 4,
+                                            ry: 4
+                                        },
+                                        ...commonAttrs
+                                    }
+                                });
+                        }
+                        
+                        element.prop('type', 'label');
+                        element.prop('labelStyle', nodeData.labelStyle);
+                    } else {
+                        // Recreate a regular node
+                        element = new joint.shapes.standard.Rectangle({
+                            id: id,
+                            position: nodeData.position,
+                            size: nodeData.size,
+                            attrs: {
+                                body: {
+                                    fill: nodeData.attrs.fill,
+                                    stroke: nodeData.attrs.fill,
+                                    rx: 4,
+                                    ry: 4
+                                },
+                                label: {
+                                    text: nodeData.attrs.label,
+                                    fill: 'white',
+                                    fontSize: 14,
+                                    fontWeight: 'bold'
+                                }
+                            }
+                        });
+                        
+                        element.prop('tooltip', nodeData.tooltip);
+                    }
+                    
+                    graph.addCell(element);
+                    nodeMap[id] = element;
+                });
+                
+                // Recreate links
+                if (view.state.links) {
+                    view.state.links.forEach(linkData => {
+                        const link = new joint.shapes.standard.Link({
+                            source: { id: linkData.sourceId },
+                            target: { id: linkData.targetId },
+                            attrs: {
+                                line: {
+                                    stroke: linkData.color,
+                                    strokeWidth: 2,
+                                    targetMarker: {
+                                        type: 'path',
+                                        d: 'M 10 -5 0 0 10 5 z',
+                                        fill: linkData.color
+                                    }
+                                }
+                            },
+                            labels: linkData.label ? [
+                                {
+                                    position: 0.5,
+                                    attrs: {
+                                        text: {
+                                            text: linkData.label,
+                                            fill: '#333',
+                                            fontSize: 12,
+                                            fontWeight: 'bold',
+                                            textAnchor: 'middle',
+                                            textVerticalAnchor: 'middle',
+                                            pointerEvents: 'none'
+                                        },
+                                        rect: {
+                                            fill: 'white',
+                                            stroke: '#ccc',
+                                            strokeWidth: 1,
+                                            rx: 3,
+                                            ry: 3
+                                        }
+                                    }
+                                }
+                            ] : []
+                        });
+                        
+                        graph.addCell(link);
+                    });
+                }
+                
+                // Auto-resize the graph container if needed
+                autoResizeGraph();
+                
+                // Update node dropdowns
+                updateNodeDropdowns();
+            }
+            
+            // Apply scale
+            currentScale = view.state.scale;
+            paper.scale(currentScale);
+            
+            // Apply position
+            paper.translate(view.state.position.tx, view.state.position.ty);
+            
+            // Select node if applicable
+            if (view.state.selectedNodeId) {
+                const node = graph.getCell(view.state.selectedNodeId);
+                if (node) {
+                    selectNode(node);
+                }
+            } else {
+                deselectNode();
+            }
+            
+            showStatusMessage(`Loaded view "${view.name}"`);
+        }
+
+        // Add a text label to the graph
+        function addLabel() {
+            const text = document.getElementById('labelText').value;
+            if (!text) {
+                showStatusMessage('Please enter label text', 'error');
+                return;
+            }
+
+            const fontSize = parseInt(document.getElementById('labelFontSize').value || 14);
+            const style = document.getElementById('labelStyle').value || 'rectangle';
+            const color = document.getElementById('labelColor').value || '#4CAF50';
+
+            let label;
+            const commonAttrs = {
+                text: {
+                    text: text,
+                    fill: 'white',
+                    fontSize: fontSize,
+                    fontWeight: 'bold',
+                    textAnchor: 'middle',
+                    textVerticalAnchor: 'middle'
+                }
+            };
+
+            switch (style) {
+                case 'rectangle':
+                    label = new joint.shapes.standard.Rectangle({
+                        position: { x: 50 + Math.random() * 400, y: 50 + Math.random() * 300 },
+                        size: { width: text.length * 10, height: fontSize * 2.5 },
+                        attrs: {
+                            body: {
+                                fill: color,
+                                stroke: color,
+                                rx: 4,
+                                ry: 4
+                            },
+                            ...commonAttrs
+                        }
+                    });
+                    break;
+                case 'circle':
+                    const diameter = Math.max(text.length * 10, fontSize * 3);
+                    label = new joint.shapes.standard.Circle({
+                        position: { x: 50 + Math.random() * 400, y: 50 + Math.random() * 300 },
+                        size: { width: diameter, height: diameter },
+                        attrs: {
+                            body: {
+                                fill: color,
+                                stroke: color
+                            },
+                            ...commonAttrs
+                        }
+                    });
+                    break;
+                case 'ellipse':
+                    label = new joint.shapes.standard.Ellipse({
+                        position: { x: 50 + Math.random() * 400, y: 50 + Math.random() * 300 },
+                        size: { width: text.length * 10, height: fontSize * 2.5 },
+                        attrs: {
+                            body: {
+                                fill: color,
+                                stroke: color
+                            },
+                            ...commonAttrs
+                        }
+                    });
+                    break;
+                case 'cloud':
+                    // Create a simple cloud-like shape using a polygon
+                    label = new joint.shapes.standard.Polygon({
+                        position: { x: 50 + Math.random() * 400, y: 50 + Math.random() * 300 },
+                        size: { width: text.length * 10, height: fontSize * 2.5 },
+                        attrs: {
+                            body: {
+                                fill: color,
+                                stroke: color,
+                                refPoints: '10,0 20,0 30,5 40,0 50,5 60,0 70,5 80,10 80,20 75,30 85,40 75,50 65,55 50,60 35,55 25,50 15,45 5,35 0,25 5,15 10,10'
+                            },
+                            ...commonAttrs
+                        }
+                    });
+                    break;
+            }
+
+            // Set custom type to identify this as a label
+            label.prop('type', 'label');
+            label.prop('labelStyle', style);
+
+            // Add the label to the graph
+            graph.addCell(label);
+            
+            // Auto-resize the graph container if needed
+            autoResizeGraph();
+
+            // Show success message
+            showStatusMessage('Label added successfully');
+
+            // Clear the form
+            document.getElementById('labelText').value = '';
+        }
+    </script>
+</body>
+</html>
